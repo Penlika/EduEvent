@@ -18,7 +18,7 @@ const Splash4 = ({navigation}) => {
         paddingTop: '10%',
         backgroundColor: 'black',
       }}
-      resizeMode="cover">
+      resizeMode="cover">F
       <Animatable.Text
         style={{color: 'white', fontSize: 24, fontWeight: '400'}}
         duration={2000}
