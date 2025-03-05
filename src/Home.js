@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import ImageListWithDots from '../component/ImageListWithDots';
 
 
 const Home = () => {
@@ -10,7 +11,7 @@ const Home = () => {
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: hp(3) }}>
         <Text style={{ fontSize: wp(6), fontWeight: 'bold' }}>Hi, ALEX</Text>
-        <MaterialIcons name="search" size={30} color="black" />
+        <Image source={require('../image/notificationIcon.png')} style={{ width: 30, height: 30 }} />
       </View>
       <Text style={{ fontSize: wp(4), color: 'gray' }}>What would you like to learn today?</Text>
 
@@ -28,22 +29,20 @@ const Home = () => {
         shadowRadius: 5,
         elevation: 50
       }}>
+         <Image source={require('../image/searchIcon.png')} style={{ width: 20, height: 20 }} />
         <TextInput
           placeholder="Search for..."
           style={{ flex: 1, fontSize: wp(4) }}
         />
         <TouchableOpacity>
-          <MaterialIcons name="tune" size={wp(5)} color="#007BFF" />
-
+        <Image source={require('../image/tuneIcon.png')} style={{ width: 30, height: 30 }} />
         </TouchableOpacity>
       </View>
 
       {/* Banner */}
-      <Image
-        source={require('../image/placeholder.png')}
-        style={{ width: '100%', height: hp(20), borderRadius: wp(3) }}
-        resizeMode="cover"
-      />
+      <View>
+        <ImageListWithDots/>
+      </View>
 
       {/* Categories */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: hp(3) }}>
