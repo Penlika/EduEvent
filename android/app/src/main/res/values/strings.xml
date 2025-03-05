@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">EduEventProject</string>
+    <string name="facebook_app_id">1303781607406173</string>
+    <string name="fb_login_protocol_scheme">fb1303781607406173</string>
 </resources>

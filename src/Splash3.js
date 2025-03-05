@@ -44,7 +44,7 @@ const Splash3 = ({navigation}) => {
           paddingVertical: 6,
           borderRadius: 20,
         }}
-        onPress={() => navigation.navigate('Home')}>
+        onPress={() => navigation.navigate('Login')}>
         <Text style={{fontSize: 16, fontWeight: '600', color: 'black'}}>
           Skip
         </Text>
@@ -66,7 +66,7 @@ const Splash3 = ({navigation}) => {
           shadowRadius: 5,
           shadowOffset: {width: 0, height: 2},
         }}
-        onPress={() => navigation.navigate('Home')}>
+        onPress={() => navigation.navigate('Login')}>
         <Text
           style={{
             color: 'white',

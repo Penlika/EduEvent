@@ -1,0 +1,121 @@
+{
+  "project_info": {
+    "project_number": "162244598463",
+    "project_id": "ktgk-b761a",
+    "storage_bucket": "ktgk-b761a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162244598463:android:cce01c73bf04a41094c40a",
+        "android_client_info": {
+          "package_name": "com.edueventproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162244598463-6khktu50l0ck66ptgqd1ibunh6f90fil.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.edueventproject",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlStIeclSIYSu-PsNNyOqMJQDMpjUiJAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162244598463:android:32bacf418f73641194c40a",
+        "android_client_info": {
+          "package_name": "com.finalproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162244598463-kjevjek5nsng3pfghdjpofsjt8qetlr1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.finalproject",
+            "certificate_hash": "81b0763b85ebd92b16c4179bda9238711d9cc1e5"
+          }
+        },
+        {
+          "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlStIeclSIYSu-PsNNyOqMJQDMpjUiJAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162244598463:android:5be657c84fe6d34f94c40a",
+        "android_client_info": {
+          "package_name": "com.lab4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162244598463-rff0lb036pg1h5urea8oif09atrk7fqb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lab4",
+            "certificate_hash": "81b0763b85ebd92b16c4179bda9238711d9cc1e5"
+          }
+        },
+        {
+          "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlStIeclSIYSu-PsNNyOqMJQDMpjUiJAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162244598463-4ih8pn3qunpbl97uf4gqn2ap387t3hor.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
