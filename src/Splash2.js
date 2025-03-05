@@ -16,7 +16,7 @@ const Splash2 = ({navigation}) => {
       }}
       resizeMode="cover">
       <Animatable.Text
-        style={{color: 'black', fontSize: 40, fontWeight: '600'}}
+        style={{color: 'black', fontSize: 30, fontWeight: '600',textAlign:'center'}}
         duration={2000}
         animation="lightSpeedIn">
         Join the event easily
