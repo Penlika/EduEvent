@@ -5,7 +5,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ImageListWithDots from '../component/ImageListWithDots';
 
 
-const Home = () => {
+const HomeScreen = () => {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFF', paddingHorizontal: wp(5) }}>
       {/* Header */}
@@ -118,4 +118,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeScreen;
