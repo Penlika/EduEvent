@@ -32,7 +32,7 @@ const AllCategory = ({navigation}) => {
   return (
     <ScrollView style={{flex: 1, backgroundColor: '#FFFFFF'}}>
       <View style={{padding: 16, paddingTop: '20%'}}>
-        <View style={{flexDirection: 'row',}}>
+        <View style={{flexDirection: 'row'}}>
           <TouchableOpacity
             style={{margin: 5}}
             onPress={() => navigation.navigate('HomeScreen')}>
@@ -41,9 +41,10 @@ const AllCategory = ({navigation}) => {
               style={{width: 26.5, height: 20}}
             />
           </TouchableOpacity>
-          <Text style={{fontSize: 24, fontWeight: 'bold',marginLeft:10}}>
+          <Text style={{fontSize: 24, fontWeight: 'bold', marginLeft: 10}}>
             All Category
-          </Text></View>
+          </Text>
+        </View>
         {/* Search Bar */}
         <View
           style={{
@@ -62,11 +63,12 @@ const AllCategory = ({navigation}) => {
           }}>
           <TextInput
             placeholder="Search for.."
-            placeholderTextColor="#BCC0C8"
+            placeholderTextColor="#000"
             style={{
               flex: 1,
               fontSize: wp(4),
               paddingVertical: hp(1),
+              color:"#000000"
             }}
           />
           <TouchableOpacity style={{marginLeft: 10}}>
