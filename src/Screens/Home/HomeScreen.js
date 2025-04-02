@@ -11,7 +11,7 @@ const HomeScreen = () => {
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: hp(3) }}>
         <Text style={{ fontSize: wp(6), fontWeight: 'bold' }}>Hi, ALEX</Text>
-        <Image source={require('../image/notificationIcon.png')} style={{ width: 30, height: 30 }} />
+        <Image source={require('../../assets/images/notificationIcon.png')} style={{ width: 30, height: 30 }} />
       </View>
       <Text style={{ fontSize: wp(4), color: 'gray' }}>What would you like to learn today?</Text>
 
@@ -29,13 +29,13 @@ const HomeScreen = () => {
         shadowRadius: 5,
         elevation: 50
       }}>
-         <Image source={require('../image/searchIcon.png')} style={{ width: 20, height: 20 }} />
+         <Image source={require('../../assets/images/searchIcon.png')} style={{ width: 20, height: 20 }} />
         <TextInput
           placeholder="Search for..."
           style={{ flex: 1, fontSize: wp(4) }}
         />
         <TouchableOpacity>
-        <Image source={require('../image/tuneIcon.png')} style={{ width: 30, height: 30 }} />
+        <Image source={require('../../assets/images/tuneIcon.png')} style={{ width: 30, height: 30 }} />
         </TouchableOpacity>
       </View>
 

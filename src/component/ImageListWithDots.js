@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { View, Image, FlatList, StyleSheet, Dimensions } from "react-native";
 
 const imagesData = [
-  { id: "1", source: require("../image/placeholder.png") },
-  { id: "2", source: require("../image/placeholder.png") },
-  { id: "3", source: require("../image/placeholder.png") },
-  { id: "4", source: require("../image/placeholder.png") },
-  { id: "5", source: require("../image/placeholder.png") },
+  { id: "1", source: require("../assets/images/placeholder.png") },
+  { id: "2", source: require("../assets/images/placeholder.png") },
+  { id: "3", source: require("../assets/images/placeholder.png") },
+  { id: "4", source: require("../assets/images/placeholder.png") },
+  { id: "5", source: require("../assets/images/placeholder.png") },
 ];
 
 const { width, height } = Dimensions.get("window");
