@@ -1,5 +1,5 @@
 import React from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import SplashStack from './SplashStack';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
@@ -25,3 +25,10 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff', 
+  },
+});

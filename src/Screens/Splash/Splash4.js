@@ -32,7 +32,7 @@ const Splash4 = ({navigation}) => {
         Anithing which you want for your vehicle
       </Animatable.Text>
       <TouchableOpacity
-        onPress={() => navigation.replace('AuthStack')}
+        onPress={() => navigation.navigate('AuthStack')}
         style={{
           backgroundColor: 'rgba(255, 255, 255, 0.2)',
           paddingVertical: 12,
