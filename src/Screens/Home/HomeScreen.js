@@ -3,14 +3,17 @@ import { View, Text, TextInput, Image, ScrollView, TouchableOpacity } from 'reac
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ImageListWithDots from '../../component/ImageListWithDots';
-
+import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFF', paddingHorizontal: wp(5) }}>
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: hp(3) }}>
-        <Text style={{ fontSize: wp(6), fontWeight: 'bold' }}>Hi, ALEX</Text>
+        <TouchableOpacity onPress={() => navigation.openDrawer()}> {/* Opens the drawer */}
+          <Text style={{ fontSize: wp(6), fontWeight: 'bold' }}>Hi, ALEX</Text>
+        </TouchableOpacity>
         <Image source={require('../../assets/images/notificationIcon.png')} style={{ width: 30, height: 30 }} />
       </View>
       <Text style={{ fontSize: wp(4), color: 'gray' }}>What would you like to learn today?</Text>

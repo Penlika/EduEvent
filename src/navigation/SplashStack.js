@@ -1,10 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import Splash0 from '../screens/Splash/Splash0'
-import Splash1 from '../screens/Splash/Splash1'
-import Splash2 from '../screens/Splash/Splash2'
-import Splash3 from '../screens/Splash/Splash3'
-import Splash4 from '../screens/Splash/Splash4'
+import Splash0 from '../Screens/Splash/Splash0'
+import Splash1 from '../Screens/Splash/Splash1'
+import Splash2 from '../Screens/Splash/Splash2'
+import Splash3 from '../Screens/Splash/Splash3'
 import {createStackNavigator} from '@react-navigation/stack';
 const Stack = createStackNavigator();
 const SplashStack = () => {
@@ -14,7 +13,6 @@ const SplashStack = () => {
       <Stack.Screen name="Splash1" component={Splash1} />
       <Stack.Screen name="Splash2" component={Splash2} />
       <Stack.Screen name="Splash3" component={Splash3} />
-      <Stack.Screen name="Splash4" component={Splash4} />
     </Stack.Navigator>
   )
 }

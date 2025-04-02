@@ -1,26 +1,26 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, SafeAreaView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import SplashStack from './SplashStack';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
-import EventStack from './EventStack';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+
 const Stack = createStackNavigator();
+
 const AppNavigator = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <NavigationContainer>
+    <NavigationContainer>
+      <SafeAreaView style={styles.container}>
         <Stack.Navigator
           initialRouteName="SplashStack"
-          screenOptions={{headerShown: false}}>
+          screenOptions={{ headerShown: false }}>
           <Stack.Screen name="SplashStack" component={SplashStack} />
           <Stack.Screen name="AuthStack" component={AuthStack} />
           <Stack.Screen name="MainStack" component={MainStack} />
-          <Stack.Screen name="EventStack" component={EventStack} />
         </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaView>
+      </SafeAreaView>
+    </NavigationContainer>
   );
 };
 
@@ -29,6 +29,6 @@ export default AppNavigator;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', 
+    backgroundColor: '#ffffff',
   },
 });
