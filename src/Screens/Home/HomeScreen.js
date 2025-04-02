@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import ImageListWithDots from '../component/ImageListWithDots';
+import ImageListWithDots from '../../component/ImageListWithDots';
 
 
 const HomeScreen = () => {

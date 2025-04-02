@@ -5,7 +5,7 @@ import * as Animatable from 'react-native-animatable';
 const Splash3 = ({navigation}) => {
   return (
     <ImageBackground
-      source={require('../image/splash1.png')}
+      source={require('../../assets/images/splash1.png')}
       style={{
         flex: 1,
         justifyContent: 'center',
@@ -44,7 +44,7 @@ const Splash3 = ({navigation}) => {
           paddingVertical: 6,
           borderRadius: 20,
         }}
-        onPress={() => navigation.navigate('Login')}>
+        onPress={() => navigation.navigate('AuthStack')}>
         <Text style={{fontSize: 16, fontWeight: '600', color: 'black'}}>
           Skip
         </Text>
@@ -66,7 +66,7 @@ const Splash3 = ({navigation}) => {
           shadowRadius: 5,
           shadowOffset: {width: 0, height: 2},
         }}
-        onPress={() => navigation.navigate('Login')}>
+        onPress={() => navigation.replace('Login')}>
         <Text
           style={{
             color: 'white',

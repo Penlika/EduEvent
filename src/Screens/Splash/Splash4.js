@@ -10,7 +10,7 @@ import * as Animatable from 'react-native-animatable';
 const Splash4 = ({navigation}) => {
   return (
     <ImageBackground
-      source={require('../image/splash4.png')}
+      source={require('../../assets/images/splash4.png')}
       style={{
         flex: 1,
         justifyContent: 'flex-start',
@@ -32,7 +32,7 @@ const Splash4 = ({navigation}) => {
         Anithing which you want for your vehicle
       </Animatable.Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate('Login')}
+        onPress={() => navigation.replace('AuthStack')}
         style={{
           backgroundColor: 'rgba(255, 255, 255, 0.2)',
           paddingVertical: 12,

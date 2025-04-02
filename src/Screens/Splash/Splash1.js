@@ -6,7 +6,7 @@ import * as Animatable from 'react-native-animatable';
 const Splash1 = ({ navigation }) => {
   return (
     <ImageBackground
-      source={require('../image/splash1.png')}
+      source={require('../../assets/images/splash1.png')}
       style={{
         flex: 1,
         justifyContent: 'center',
@@ -49,7 +49,7 @@ const Splash1 = ({ navigation }) => {
           paddingVertical: 6,
           borderRadius: 20,
         }}
-        onPress={() => navigation.navigate('Home')}
+        onPress={() => navigation.replace('AuthStack')}
       >
         <Text style={{ fontSize: 16, fontWeight: '600', color: 'black' }}>Skip</Text>
       </TouchableOpacity>

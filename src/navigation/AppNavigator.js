@@ -1,20 +1,27 @@
-import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
-
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native';
+import SplashStack from './SplashStack';
+import AuthStack from './AuthStack';
+import MainStack from './MainStack';
+import EventStack from './EventStack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+const Stack = createNativeStackNavigator();
 const AppNavigator = () => {
   return (
-    <View>
-      <Text>
-        Đây là thành phần chính quản lý tất cả các stack (ngăn xếp màn hình) của
-        ứng dụng. Sử dụng NavigationContainer để quản lý điều hướng chính. Sử
-        dụng createNativeStackNavigator để điều hướng dạng stack (ngăn xếp màn
-        hình). Dựa vào trạng thái đăng nhập (user từ hook useAuth), hiển thị
-        AuthStack hoặc EventStac
-      </Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="SplashStack"
+          screenOptions={{headerShown: false}}>
+          <Stack.Screen name="SplashStack" component={SplashStack} />
+          <Stack.Screen name="AuthStack" component={AuthStack} />
+          <Stack.Screen name="MainStack" component={MainStack} />
+          <Stack.Screen name="EventStack" component={EventStack} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaView>
   );
 };
 
 export default AppNavigator;
-
-const styles = StyleSheet.create({});

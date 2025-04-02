@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const LoginScreen = () => {
+const EventScreen = () => {
   return (
     <View>
-      <Text>LoginScreen</Text>
+      <Text>EventScreen</Text>
     </View>
   )
 }
 
-export default LoginScreen
+export default EventScreen
 
 const styles = StyleSheet.create({})

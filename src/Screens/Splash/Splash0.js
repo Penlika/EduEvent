@@ -10,7 +10,7 @@ const Splash0 = ({navigation}) => {
   }, [navigation]);
   return (
     <ImageBackground
-      source={require('../image/splash0.png')}
+      source={require('../../assets/images/splash0.png')}
       style={{
         flex: 1,
         justifyContent: 'flex-start',
