@@ -1,11 +1,11 @@
 import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoginScreen from '../Screens/Auth/LoginScreen';
-import SignUp from '../Screens/Auth/SignUp';
-import ForgetPassword from '../Screens/Auth/ForgetPassword';
+import {createStackNavigator} from '@react-navigation/stack';
+import LoginScreen from '../screens/Auth/LoginScreen';
+import SignUp from '../screens/Auth/SignUp';
+import ForgetPassword from '../screens/Auth/ForgetPassword';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 const AuthStack = () => {
   return (
