@@ -66,7 +66,7 @@ const Splash3 = ({navigation}) => {
           shadowRadius: 5,
           shadowOffset: {width: 0, height: 2},
         }}
-        onPress={() => navigation.replace('AuthStack')}>
+        onPress={() => navigation.replace('MainStack')}>
         <Text
           style={{
             color: 'white',
