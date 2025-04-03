@@ -16,7 +16,7 @@ const Login = () => {
     try {
       await auth().signInWithEmailAndPassword(email, password);
       Alert.alert("Success", "Logged in successfully!");
-      navigation.replace("Tabs");
+      navigation.replace("MainStack");
     } catch (error) {
       Alert.alert("Login Error", error.message);
     }

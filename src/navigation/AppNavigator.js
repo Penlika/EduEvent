@@ -10,15 +10,13 @@ const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="SplashStack"
-        screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SplashStack" component={SplashStack} />
-        <Stack.Screen name="AuthStack" component={AuthStack} />
-        <Stack.Screen name="MainStack" component={MainStack} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator
+      initialRouteName="SplashStack"
+      screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SplashStack" component={SplashStack} />
+      <Stack.Screen name="AuthStack" component={AuthStack} />
+      <Stack.Screen name="MainStack" component={MainStack} />
+    </Stack.Navigator>
   );
 };
 
