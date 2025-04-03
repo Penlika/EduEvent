@@ -73,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
     
         console.log("Google Sign-In Successful:", userCredential.user);
     
-        navigation.replace("Home");
+        navigation.replace("Tabs");
     
         return userCredential.user;
       } catch (error) {
