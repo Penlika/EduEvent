@@ -3,7 +3,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import LoginScreen from '../Screens/Auth/LoginScreen';
 import SignUp from '../Screens/Auth/SignUp';
-import ForgetPassword from '../Screens/Auth/ForgetPassword';
+import ForgotPasswordScreen from '../Screens/Auth/ForgotPasswordScreen';
 import HomeScreen from '../Screens/Home/HomeScreen';
 import Login from '../Screens/Auth/Login';
 
@@ -18,7 +18,7 @@ const AuthStack = () => {
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="SignUp" component={SignUp} />
-      <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Home" component={HomeScreen}/>
       {/* <Stack.Screen name="CheckEmail" component={CheckEmail} /> */}
     </Stack.Navigator>

@@ -55,6 +55,9 @@ const Login = () => {
         >
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
+          <Text style={{ color: "blue", marginTop: 10 }}>Forgot your password?</Text>
+        </TouchableOpacity>
       </Animated.View>
     </View>
   );

@@ -3,9 +3,7 @@ import React from 'react';
 import HomeScreen from '../Screens/Home/HomeScreen';
 import EventScreen from '../Screens/Home/EventScreen';
 import BottomTabNavigator from './BottomTabNavigator';
-import HomeScreen from '../screens/Home/HomeScreen';
-import EventScreen from '../screens/Home/EventScreen';
-import AllCategory from '../screens/Event/AllCategory';
+import AllCategory from '../Screens/Event/AllCategory';
 
 const Stack = createStackNavigator();
 
