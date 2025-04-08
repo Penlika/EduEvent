@@ -1,20 +1,42 @@
-import React, { useState } from "react";
-import { View, Image, FlatList, StyleSheet, Dimensions } from "react-native";
-
+import React, {useState} from 'react';
+import {View, Image, FlatList, StyleSheet, Dimensions, TouchableOpacity} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 const imagesData = [
-  { id: "1", source: require("../assets/images/placeholder.png") },
-  { id: "2", source: require("../assets/images/placeholder.png") },
-  { id: "3", source: require("../assets/images/placeholder.png") },
-  { id: "4", source: require("../assets/images/placeholder.png") },
-  { id: "5", source: require("../assets/images/placeholder.png") },
+  {
+    id: '1',
+    source: require('../assets/images/placeholder.png'),
+    eventId: 'TqtxnwNYHGDhzHvNCJse',
+  },
+  {
+    id: '2',
+    source: require('../assets/images/placeholder.png'),
+    eventId: 'TqtxnwNYHGDhzHvNCJse',
+  },
+  {
+    id: '3',
+    source: require('../assets/images/placeholder.png'),
+    eventId: 'TqtxnwNYHGDhzHvNCJse',
+  },
+  {
+    id: '4',
+    source: require('../assets/images/placeholder.png'),
+    eventId: 'TqtxnwNYHGDhzHvNCJse',
+  },
+  {
+    id: '5',
+    source: require('../assets/images/placeholder.png'),
+    eventId: 'TqtxnwNYHGDhzHvNCJse',
+  },
 ];
 
-const { width, height } = Dimensions.get("window");
+const {width, height} = Dimensions.get('window');
 
 const ImageListWithDots = () => {
+  const navigation = useNavigation();
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleScroll = (event) => {
+  const handleScroll = event => {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
     setCurrentIndex(index);
   };
@@ -26,11 +48,13 @@ const ImageListWithDots = () => {
         data={imagesData}
         horizontal
         pagingEnabled
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
-        renderItem={({ item }) => (
-          <Image source={item.source} style={styles.image} />
+        renderItem={({item}) => (
+          <TouchableOpacity onPress={()=>navigation.navigate('EventDetail', { eventId: item.eventId })}>
+            <Image source={item.source} style={styles.image} />
+          </TouchableOpacity>
         )}
       />
 
@@ -53,20 +77,20 @@ const ImageListWithDots = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
+    alignItems: 'center',
   },
   image: {
     width: width * 0.9, // 90% chiều rộng màn hình
     height: height * 0.25, // 25% chiều cao màn hình
     borderRadius: 10,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
   progressContainer: {
-    position: "absolute",
-    top: "90%", // Đặt vị trí lên khoảng 9/10 chiều cao ảnh
-    left: "50%",
-    transform: [{ translateX: -width * 0.1 }], // Căn giữa thanh tiến trình
-    flexDirection: "row",
+    position: 'absolute',
+    top: '90%', // Đặt vị trí lên khoảng 9/10 chiều cao ảnh
+    left: '50%',
+    transform: [{translateX: -width * 0.1}], // Căn giữa thanh tiến trình
+    flexDirection: 'row',
     padding: 5,
     borderRadius: 15,
   },
@@ -75,14 +99,13 @@ const styles = StyleSheet.create({
     height: width * 0.02,
     borderRadius: width * 0.01,
     marginHorizontal: width * 0.01,
-    
   },
   activeDot: {
-    backgroundColor: "#FAC840",
+    backgroundColor: '#FAC840',
     width: width * 0.04,
   },
   inactiveDot: {
-    backgroundColor: "#1A6EFC",
+    backgroundColor: '#1A6EFC',
   },
 });
 

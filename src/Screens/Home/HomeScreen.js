@@ -12,7 +12,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import ImageListWithDots from '../../component/ImageListWithDots';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -20,11 +20,20 @@ const HomeScreen = () => {
     <ScrollView
       style={{flex: 1, backgroundColor: '#F8FAFF', paddingHorizontal: wp(5)}}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: hp(3) }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: hp(3),
+        }}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Text style={{ fontSize: wp(6), fontWeight: 'bold' }}>Hi, ALEX</Text>
+          <Text style={{fontSize: wp(6), fontWeight: 'bold'}}>Hi, ALEX</Text>
         </TouchableOpacity>
-        <Image source={require('../../assets/images/notificationIcon.png')} style={{ width: 30, height: 30 }} />
+        <Image
+          source={require('../../assets/images/notificationIcon.png')}
+          style={{width: 30, height: 30}}
+        />
       </View>
       <Text style={{fontSize: wp(4), color: 'gray'}}>
         What would you like to learn today?
@@ -63,7 +72,7 @@ const HomeScreen = () => {
 
       {/* Banner */}
       <View>
-        <ImageListWithDots />
+        <ImageListWithDots navigation={navigation} />
       </View>
 
       {/* Categories */}
@@ -127,7 +136,7 @@ const HomeScreen = () => {
         showsHorizontalScrollIndicator={false}
         style={{marginTop: hp(2)}}>
         {[1, 2].map((_, index) => (
-          <View
+          <TouchableOpacity
             key={index}
             style={{
               width: wp(50),
@@ -137,7 +146,12 @@ const HomeScreen = () => {
               borderRadius: wp(3),
               padding: wp(3),
               justifyContent: 'flex-end',
-            }}>
+            }}
+            onPress={() =>
+              navigation.navigate('EventDetail', {
+                eventId: 'TqtxnwNYHGDhzHvNCJse',
+              })
+            }>
             <Text
               style={{fontSize: wp(3.5), color: 'orange', fontWeight: 'bold'}}>
               Scientific Conference
@@ -148,7 +162,7 @@ const HomeScreen = () => {
             <Text style={{fontSize: wp(3.5), color: 'white'}}>
               120 People | ⭐ 4.2
             </Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
 

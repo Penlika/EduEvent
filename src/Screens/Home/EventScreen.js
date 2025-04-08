@@ -4,7 +4,7 @@ import React from 'react'
 const EventScreen = () => {
   return (
     <View>
-      <Text>EventScreen</Text>
+      <Text>EventScreen show danh sách sự kiện theo all hoặc chuyên ngành</Text>
     </View>
   )
 }
