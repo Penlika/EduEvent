@@ -77,7 +77,7 @@ const EventDetail = ({route, navigation}) => {
             style={{...styles.headerImg, marginTop: 30}}
             resizeMode="cover">
             <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Icon name="arrow-back" size={24} color="#fff" />
+              <Icon name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
           </ImageBackground>
         ) : (
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 24,
+    borderRadius: 25,
     padding: 16,
     alignSelf: 'flex-start',
   },
