@@ -275,6 +275,7 @@ const EventDetail = ({route, navigation}) => {
             shadowRadius: 5,
             shadowOffset: {width: 0, height: 2},
           }}>
+          
           <Icon name="arrow-right" size={30} color="#007AFF" />
         </View>
       </TouchableOpacity>
