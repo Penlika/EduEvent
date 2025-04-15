@@ -7,19 +7,16 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
-  ImageBackground,
 } from 'react-native';
 import {firebase} from '@react-native-firebase/firestore';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import YoutubePlayer from 'react-native-youtube-iframe';
-import moment from 'moment';
-import {auth} from '../../firebaseConfig';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
+import moment from 'moment'; 
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
   // truyền eventId từ HomeScreen qua navigation
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('about'); // hoặc 'trailer'
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -69,27 +66,17 @@ const EventDetail = ({route, navigation}) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        {/* Header với hình ảnh làm nền */}
-        {eventData.image ? (
-          <ImageBackground
-            source={{uri: eventData.image}}
-            style={{...styles.headerImg, marginTop: 30}}
-            resizeMode="cover">
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Icon name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
-          </ImageBackground>
-        ) : (
-          <View style={[styles.headerImg, {backgroundColor: 'black'}]}>
-            <TouchableOpacity
-              onPress={handleBack}
-              style={{...styles.backBtn, marginTop: 30}}>
-              <Icon name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* Header với nút Back */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+          <Icon name="arrow-back" size={24} color="#202244" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {eventData.title || 'Event Detail'}
+        </Text>
+      </View>
 
+      <ScrollView contentContainerStyle={styles.contentContainer}>
         {/* Card info chung */}
         <View style={styles.eventCard}>
           {/* Badge Category */}
@@ -110,12 +97,12 @@ const EventDetail = ({route, navigation}) => {
           </Text>
 
           <View style={styles.infoRow}>
-            <Icon name="map-marker" size={16} color="#333" />
+            <Icon name="location-pin" size={16} color="#333" />
             <Text style={styles.infoText}>
-              {eventData.location || 'Khu vuc chua duoc them'}
+              {eventData.location || 'Khu K23'}
             </Text>
             <Text style={styles.separator}>|</Text>
-            <Icon name="clock-outline" size={16} color="#333" />
+            <Icon name="access-time" size={16} color="#333" />
             <Text style={styles.infoText}>
               {eventData.time
                 ? eventData.time.toDate().toLocaleTimeString('vi-VN', {
@@ -130,56 +117,22 @@ const EventDetail = ({route, navigation}) => {
           <Text style={styles.quantity}>
             {eventData.quantity
               ? `${eventData.quantity}/${eventData.quantitymax}`
-              : '0/500'}
+              : '399/500'}
           </Text>
 
           {/* Tabs: About / Trailer (demo) */}
           <View style={styles.tabWrapper}>
-            <TouchableOpacity onPress={() => setActiveTab('about')}>
-              <Text
-                style={[
-                  styles.tabItem,
-                  activeTab === 'about' && {
-                    color: '#2F2F2F',
-                    fontWeight: 'bold',
-                  },
-                ]}>
-                About
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setActiveTab('trailer')}>
-              <Text
-                style={[
-                  styles.tabItem,
-                  activeTab === 'trailer' && {
-                    color: '#2F2F2F',
-                    fontWeight: 'bold',
-                  },
-                ]}>
-                Trailer
-              </Text>
-            </TouchableOpacity>
+            <Text
+              style={[styles.tabItem, {color: '#2F2F2F', fontWeight: 'bold'}]}>
+              About
+            </Text>
+            <Text style={styles.tabItem}>Trailer</Text>
           </View>
 
-          {activeTab === 'about' ? (
-            <Text style={styles.aboutText}>
-              {eventData.about || 'Thông tin mô tả sự kiện...'}
-            </Text>
-          ) : (
-            <View style={styles.trailerWrapper}>
-              {eventData.trailerId ? (
-                <YoutubePlayer
-                  height={200}
-                  width={360}
-                  play={false}
-                  videoId={eventData.trailerId}
-                />
-              ) : (
-                <Text>Không có video trailer.</Text>
-              )}
-            </View>
-          )}
+          {/* About content */}
+          <Text style={styles.aboutText}>
+            {eventData.about || 'Thông tin mô tả sự kiện...'}
+          </Text>
         </View>
 
         {/* Instructor */}
@@ -198,28 +151,30 @@ const EventDetail = ({route, navigation}) => {
               {eventData.instructor?.field || 'Graphic Design'}
             </Text>
           </View>
-          {/* Icon chat */}
+          {/* Icon chat hay comment */}
           <Icon
-            name="chat-processing-outline"
-            size={30}
+            name="chat-bubble-outline"
+            size={20}
             color="#333"
             style={{marginLeft: 'auto'}}
           />
         </View>
 
         {/* What You'll Get */}
-        <Text style={styles.sectionTitle}>What You'll Get</Text>
-        {eventData.benefits?.map((item, index) => (
-          <View style={styles.benefitItem} key={index}>
-            <Icon
-              name={item.icon}
-              size={20}
-              color="#000"
-              style={styles.benefitIcon}
-            />
-            <Text style={styles.benefitText}>{item.text}</Text>
-          </View>
-        ))}
+        <Text style={styles.sectionTitle}>What You’ll Get</Text>
+        <View style={styles.benefitItem}>
+          <Icon name="check-circle-outline" size={20} color="#333" />
+          <Text style={styles.benefitText}>Share Experience</Text>
+        </View>
+        <View style={styles.benefitItem}>
+          <Icon name="devices" size={20} color="#333" />
+          <Text style={styles.benefitText}>Access Mobile, Desktop & TV</Text>
+        </View>
+        <View style={styles.benefitItem}>
+          <Icon name="signal-cellular-alt" size={20} color="#333" />
+          <Text style={styles.benefitText}>Beginner Level</Text>
+        </View>
+        {/* ... Thêm các mục khác tương tự ... */}
 
         {/* Reviews */}
         <View style={styles.reviewHeader}>
@@ -262,22 +217,7 @@ const EventDetail = ({route, navigation}) => {
       {/* Nút đăng ký tham gia */}
       <TouchableOpacity style={styles.registerBtn}>
         <Text style={styles.registerBtnText}>Register for the event</Text>
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            backgroundColor: 'white',
-            borderRadius: 30,
-            justifyContent: 'center',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOpacity: 0.3,
-            shadowRadius: 5,
-            shadowOffset: {width: 0, height: 2},
-          }}>
-
-          <Icon name="arrow-right" size={30} color="#007AFF" />
-        </View>
+        <Icon name="arrow-forward" size={20} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -295,31 +235,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerImg: {
-    width: '100%',
-    height: '300',
-    overflow: 'hidden',
+  header: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    elevation: 2,
   },
   backBtn: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 24,
-    padding: 16,
-    alignSelf: 'flex-start',
+    marginRight: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
   },
   contentContainer: {
+    paddingHorizontal: 16,
     paddingBottom: 80, // chừa khoảng trống cho nút Register
   },
   eventCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginTop: -4,
-    margin: 16,
     padding: 16,
-    elevation: 50,
+    marginTop: 16,
+    marginBottom: 16,
+    elevation: 2,
   },
   categoryText: {
     fontSize: 14,
@@ -384,7 +325,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    margin: 16,
+    marginTop: 16,
     color: '#2F2F2F',
   },
   instructorContainer: {
@@ -392,9 +333,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    margin: 16,
-    padding: 16,
-    elevation: 50,
+    padding: 12,
+    elevation: 2,
   },
   instructorAvatar: {
     width: 48,
@@ -414,7 +354,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    marginLeft: 16,
   },
   benefitText: {
     marginLeft: 8,
@@ -428,7 +367,6 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    marginRight: 8,
     color: '#1E88E5',
   },
   reviewItem: {
@@ -437,8 +375,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
-    margin: 16,
-    elevation: 25,
+    elevation: 1,
   },
   reviewAvatarWrapper: {
     marginRight: 12,
@@ -485,58 +422,19 @@ const styles = StyleSheet.create({
   },
   registerBtn: {
     position: 'absolute',
-    bottom: '4%',
-    right: '10%',
-    left:"10%",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1E88E5',
     flexDirection: 'row',
-    justifyContent:"space-between",
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: {width: 0, height: 2},
-  },
-  registerBtnText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  tabWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
-  },
-  tabItem: {
-    fontSize: 16,
-    color: '#999',
-  },
-  aboutText: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 22,
-  },
-  trailerWrapper: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#eee',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 14,
   },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 16,
-  },
-  benefitIcon: {
-    marginRight: 10,
-  },
-  benefitText: {
-    fontSize: 14,
-    color: '#333',
+  registerBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    marginRight: 8,
+    fontWeight: '600',
   },
 });
