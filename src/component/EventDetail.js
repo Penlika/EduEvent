@@ -13,7 +13,7 @@ import {firebase} from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import moment from 'moment';
-import {auth} from '../../firebaseConfig';
+import {handleRegister} from '../utils/handleRegister';
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
   // truyền eventId từ HomeScreen qua navigation
@@ -66,6 +66,19 @@ const EventDetail = ({route, navigation}) => {
       </View>
     );
   }
+  // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
+  const onPressRegister = () => {
+    const event = {
+      id: eventId,
+      title: eventData.title || '',
+      location: eventData.location || '',
+      time: eventData.time || '',
+      category: eventData.category || '',
+    };
+
+    handleRegister(event);
+    navigation.navigate("Schedule")
+  };
 
   return (
     <View style={styles.container}>
@@ -77,7 +90,7 @@ const EventDetail = ({route, navigation}) => {
             style={{...styles.headerImg, marginTop: 30}}
             resizeMode="cover">
             <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Icon name="arrow-back" size={24} color="#fff" />
+              <Icon name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
           </ImageBackground>
         ) : (
@@ -260,7 +273,7 @@ const EventDetail = ({route, navigation}) => {
       </ScrollView>
 
       {/* Nút đăng ký tham gia */}
-      <TouchableOpacity style={styles.registerBtn}>
+      <TouchableOpacity style={styles.registerBtn} onPress={onPressRegister} >
         <Text style={styles.registerBtnText}>Register for the event</Text>
         <View
           style={{
@@ -487,9 +500,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: '4%',
     right: '10%',
-    left:"10%",
+    left: '10%',
     flexDirection: 'row',
-    justifyContent:"space-between",
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#007AFF',
     paddingVertical: 12,

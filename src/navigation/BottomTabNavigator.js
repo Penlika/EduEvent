@@ -9,6 +9,7 @@ import ProfileScreen from '../Screens/Profile/ProfileScreen'; // Import ProfileS
 import Icon from 'react-native-vector-icons/Feather';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import SettingScreen from '../Screens/Profile/SettingScreen';
+import Schedule from '../Screens/Schedules/Schedule';
 
 // Create the Drawer navigator
 const Drawer = createDrawerNavigator();
@@ -43,7 +44,7 @@ const BottomTabNavigator = () => {
             />
             <Tab.Screen
               name="Events"
-              component={EventScreen}
+              component={Schedule}
               options={{
                 tabBarIcon: ({ color }) => <Icon name="calendar" size={20} color={color} />,
               }}
