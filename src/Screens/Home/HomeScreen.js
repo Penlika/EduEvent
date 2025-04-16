@@ -120,6 +120,8 @@ const HomeScreen = () => {
             } else {
               // Reset to original content for English
               setTranslations({...originalContent});
+              // Clear translation cache when switching to English
+              setTranslationCache({});
             }
           }
         }
@@ -173,6 +175,8 @@ const HomeScreen = () => {
   const translateAllContent = async (targetLang) => {
     if (targetLang === 'en') {
       setTranslations({...originalContent});
+      // Clear translation cache when switching to English
+      setTranslationCache({});
       return;
     }
     

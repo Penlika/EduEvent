@@ -84,24 +84,6 @@ const LoginScreen = ({ navigation }) => {
     };
     
     
-    const handleFacebookSignIn = async () => {
-      try {
-        LoginManager.setLoginBehavior("native_with_fallback");
-        const result = await LoginManager.logInWithPermissions(["public_profile", "email"]);
-        if (result.isCancelled) throw new Error("User cancelled the login process");
-        const data = await AccessToken.getCurrentAccessToken();
-        if (!data) throw new Error("Something went wrong obtaining the access token");
-        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-        const userCredential = await auth().signInWithCredential(facebookCredential);
-        await saveUserToFirestore(userCredential.user);
-        console.log("Facebook sign-in successful:", userCredential.user);
-        return userCredential.user;
-      } catch (error) {
-        console.error("Facebook Sign-In Error:", error?.message || error);
-        Alert.alert("Facebook Sign-In Error", error?.message || "An unexpected error occurred.");
-      }
-    };
-    
     
 
   return (
@@ -111,11 +93,6 @@ const LoginScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
         <Image source={require('../../assets/images/google.png')} style={styles.icon} />
         <Text style={styles.buttonText}>Continue with Google</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.socialButton} onPress={handleFacebookSignIn}>
-        <Image source={require('../../assets/images/facebook.png')} style={styles.icon} />
-        <Text style={styles.buttonText}>Continue with Facebook</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>( Or )</Text>

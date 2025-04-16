@@ -391,7 +391,7 @@ const EventDetail = ({route, navigation}) => {
     };
 
     handleRegister(event);
-    navigation.navigate("Schedule")
+    navigation.navigate("EventScreen")
   };
 
   return (
@@ -583,9 +583,6 @@ const EventDetail = ({route, navigation}) => {
         ))}
       </ScrollView>
 
-      {/* Nút đăng ký tham gia */}
-      <TouchableOpacity style={styles.registerBtn}>
-        <Text style={styles.registerBtnText}>{getText('register')}</Text>
       <TouchableOpacity style={styles.registerBtn} onPress={onPressRegister} >
         <Text style={styles.registerBtnText}>Register for the event</Text>
         <View
@@ -724,10 +721,8 @@ const styles = StyleSheet.create({
     bottom: '4%',
     right: '10%',
     left: "10%",
-    left: '10%',
     flexDirection: 'row',
     justifyContent: "space-between",
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#007AFF',
     paddingVertical: 12,

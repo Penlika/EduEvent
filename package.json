@@ -28,6 +28,7 @@
     "@tsconfig/react-native": "^3.0.5",
     "axios": "^1.8.4",
     "firebase": "^11.4.0",
+    "firebase-functions": "^6.3.2",
     "i18next": "^24.2.3",
     "jwt-decode": "^4.0.0",
     "moment": "^2.30.1",
