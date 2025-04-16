@@ -19,6 +19,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
 
+import {handleRegister} from '../utils/handleRegister';
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
   const [eventData, setEventData] = useState(null);
@@ -379,6 +380,19 @@ const EventDetail = ({route, navigation}) => {
       </View>
     );
   }
+  // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
+  const onPressRegister = () => {
+    const event = {
+      id: eventId,
+      title: eventData.title || '',
+      location: eventData.location || '',
+      time: eventData.time || '',
+      category: eventData.category || '',
+    };
+
+    handleRegister(event);
+    navigation.navigate("Schedule")
+  };
 
   return (
     <View style={dynamicStyles.container}>
@@ -389,7 +403,7 @@ const EventDetail = ({route, navigation}) => {
             style={{...styles.headerImg, marginTop: 30}}
             resizeMode="cover">
             <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Icon name="arrow-back" size={24} color="#fff" />
+              <Icon name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
           </ImageBackground>
         ) : (
@@ -572,6 +586,8 @@ const EventDetail = ({route, navigation}) => {
       {/* Nút đăng ký tham gia */}
       <TouchableOpacity style={styles.registerBtn}>
         <Text style={styles.registerBtnText}>{getText('register')}</Text>
+      <TouchableOpacity style={styles.registerBtn} onPress={onPressRegister} >
+        <Text style={styles.registerBtnText}>Register for the event</Text>
         <View
           style={{
             width: 40,
@@ -585,6 +601,7 @@ const EventDetail = ({route, navigation}) => {
             shadowRadius: 5,
             shadowOffset: {width: 0, height: 2},
           }}>
+
           <Icon name="arrow-right" size={30} color="#007AFF" />
         </View>
       </TouchableOpacity>
@@ -707,8 +724,10 @@ const styles = StyleSheet.create({
     bottom: '4%',
     right: '10%',
     left: "10%",
+    left: '10%',
     flexDirection: 'row',
     justifyContent: "space-between",
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#007AFF',
     paddingVertical: 12,
