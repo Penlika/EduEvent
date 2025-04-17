@@ -74,6 +74,7 @@ const HomeScreen = () => {
               
               // If switching to English, reset to original content
               if (userData.language === 'en') {
+                console.log('Switching to English - resetting translations');
                 setTranslations({...originalContent});
               } else {
                 // Otherwise translate
@@ -93,7 +94,7 @@ const HomeScreen = () => {
     // Clean up listener on component unmount
     return () => unsubscribe();
   }, []);
-  
+
   // Also check language when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
@@ -107,26 +108,28 @@ const HomeScreen = () => {
     if (user) {
       try {
         const doc = await firestore().collection('USER').doc(user.uid).get();
-        if (doc.exists && doc.data().language) {
-          const userLang = doc.data().language;
+        if (doc.exists) {
+          const userLang = doc.data().language || 'en';
           
-          // Only update if language has changed
-          if (userLang !== currentLang) {
-            setCurrentLang(userLang);
-            
-            // If language is not English, translate content
-            if (userLang !== 'en') {
-              translateAllContent(userLang);
-            } else {
-              // Reset to original content for English
-              setTranslations({...originalContent});
-              // Clear translation cache when switching to English
-              setTranslationCache({});
-            }
+          // Update current language state
+          setCurrentLang(userLang);
+          
+          // If English, explicitly reset to original content
+          if (userLang === 'en') {
+            console.log('Language is English - resetting to original content');
+            setTranslations({...originalContent});
+            setTranslationCache({});
+          } 
+          // Only translate if the language is different and not English
+          else if (userLang !== 'en') {
+            translateAllContent(userLang);
           }
         }
       } catch (err) {
         console.log('Error fetching user language:', err);
+        // Default to English on error
+        setCurrentLang('en');
+        setTranslations({...originalContent});
       }
     }
   };
@@ -173,9 +176,10 @@ const HomeScreen = () => {
 
   // Function to translate all content at once
   const translateAllContent = async (targetLang) => {
+    // Explicit check for English
     if (targetLang === 'en') {
+      console.log('TranslateAllContent: Setting to English');
       setTranslations({...originalContent});
-      // Clear translation cache when switching to English
       setTranslationCache({});
       return;
     }
@@ -201,8 +205,12 @@ const HomeScreen = () => {
     }
   };
 
-  // Helper function to get translated text
+  // Helper function to get translated text with safety fallback
   const getText = (key) => {
+    // Explicitly check if language is English to use original content
+    if (currentLang === 'en') {
+      return originalContent[key] || key;
+    }
     return translations[key] || originalContent[key] || key;
   };
 

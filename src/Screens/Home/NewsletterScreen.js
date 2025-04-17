@@ -247,17 +247,6 @@ const NewsletterScreen = ({ navigation }) => {
             } else {
               // Reset to original content for English
               setTranslations({...originalContent});
-              
-              // Also reset any translated news items
-              if (news.length > 0) {
-                const resetNews = news.map(item => ({
-                  ...item,
-                  translatedTitle: null,
-                  translatedContent: null,
-                  translatedAuthor: null
-                }));
-                setNews(resetNews);
-              }
             }
           }
         }
