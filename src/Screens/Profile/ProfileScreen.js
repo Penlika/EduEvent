@@ -11,6 +11,7 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import auth from '@react-native-firebase/auth';
@@ -26,7 +27,6 @@ const ProfileScreen = ({ navigation }) => {
   
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [newEmail, setNewEmail] = useState('');
   const [profilePic, setProfilePic] = useState(null);
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,13 +36,10 @@ const ProfileScreen = ({ navigation }) => {
     address: false,
     phone: false,
     paymentMethod: false,
-    email: false,
   });
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
   
   // Translation states
   const [currentLang, setCurrentLang] = useState('en');
@@ -60,23 +57,15 @@ const ProfileScreen = ({ navigation }) => {
     phone: 'Phone',
     email: 'Email',
     changePassword: 'Change Password',
-    changeEmail: 'Change Email',
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
     modalTitle: 'Change Password',
-    emailModalTitle: 'Change Email Address',
     newPassword: 'New Password',
     confirmPassword: 'Confirm Password',
-    currentPassword: 'Current Password',
-    newEmail: 'New Email Address',
     passwordSuccess: 'Password updated successfully.',
     passwordError: 'Failed to update password. Please try again.',
     passwordMismatch: 'Passwords do not match.',
-    emailSuccess: 'Email updated successfully.',
-    emailError: 'Failed to update email. Please try again.',
-    emailInvalid: 'Please enter a valid email address.',
-    passwordRequired: 'Current password is required to update email.',
     fieldUpdateSuccess: '{field} updated successfully.',
     fieldUpdateError: 'Failed to update {field}. Please try again.',
     profilePicSuccess: 'Profile picture updated successfully.',
@@ -90,7 +79,6 @@ const ProfileScreen = ({ navigation }) => {
     const user = auth().currentUser;
     if (user) {
       setEmail(user.email);
-      setNewEmail(user.email);
       firestore()
         .collection('USER')
         .doc(user.uid)
@@ -259,45 +247,6 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleEmailChange = async () => {
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newEmail)) {
-      Alert.alert('Error', getText('emailInvalid'));
-      return;
-    }
-
-    if (!currentPassword) {
-      Alert.alert('Error', getText('passwordRequired'));
-      return;
-    }
-
-    try {
-      const user = auth().currentUser;
-      if (user) {
-        // First reauthenticate the user with their current password
-        const credential = auth.EmailAuthProvider.credential(user.email, currentPassword);
-        await user.reauthenticateWithCredential(credential);
-        
-        // Then update the email
-        await user.updateEmail(newEmail);
-        
-        // Also update the email in firestore if needed
-        await firestore().collection('USER').doc(user.uid).update({ email: newEmail });
-        
-        // Update state
-        setEmail(newEmail);
-        
-        Alert.alert('Success', getText('emailSuccess'));
-        setEmailModalVisible(false);
-        setCurrentPassword('');
-      }
-    } catch (error) {
-      console.error('Email update error:', error);
-      Alert.alert('Error', getText('emailError'));
-    }
-  };
-
   const handleFieldUpdate = async (field, value) => {
     const user = auth().currentUser;
 
@@ -334,7 +283,7 @@ const ProfileScreen = ({ navigation }) => {
         firestore()
           .collection('USER')
           .doc(user.uid)
-          .update({ profilePic: downloadURL });
+          .update({ photoURL: downloadURL });
 
         setProfilePic(downloadURL);
         Alert.alert('Success', getText('profilePicSuccess'));
@@ -407,7 +356,7 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={[styles.ScreenContainer, { backgroundColor: isDark ? '#0C0F14' : '#FFFFFF' }]}>
+    <SafeAreaView style={[styles.ScreenContainer, { backgroundColor: isDark ? '#0C0F14' : '#FFFFFF' }]}>
       <StatusBar backgroundColor={isDark ? '#0C0F14' : '#FFFFFF'} barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.ScrollViewFlex}>
         <Text style={[styles.ScreenTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
@@ -423,11 +372,7 @@ const ProfileScreen = ({ navigation }) => {
             )}
           </TouchableOpacity>
         </View>
-
-        {renderEditableField(getText('username'), username, setUsername, 'username')}
-        {renderEditableField(getText('address'), address, setAddress, 'address')}
-        {renderEditableField(getText('phone'), phone, setPhone, 'phone')}
-
+        
         <View style={[
           styles.InputContainerComponent,
           { backgroundColor: isDark ? '#141921' : '#F5F5F5' }
@@ -448,15 +393,12 @@ const ProfileScreen = ({ navigation }) => {
               { color: isDark ? '#FFFFFF' : '#000000', backgroundColor: isDark ? '#141921' : '#F5F5F5' }
             ]}
           />
-          <TouchableOpacity
-            onPress={() => setEmailModalVisible(true)}
-            style={styles.EditButton}
-          >
-            <Text style={[styles.EditButtonText, { color: isDark ? '#D17842' : '#0066CC' }]}>
-              {getText('edit')}
-            </Text>
-          </TouchableOpacity>
         </View>
+
+        {renderEditableField(getText('username'), username, setUsername, 'username')}
+        {renderEditableField(getText('address'), address, setAddress, 'address')}
+        {renderEditableField(getText('phone'), phone, setPhone, 'phone')}
+        
         <TouchableOpacity
           style={[styles.ButtonContainer, { backgroundColor: isDark ? '#D17842' : '#0066CC' }]}
           onPress={() => setPasswordModalVisible(true)}
@@ -524,72 +466,7 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-      
-      {/* Email Change Modal */}
-      <Modal
-        transparent
-        visible={emailModalVisible}
-        animationType="slide"
-        onRequestClose={() => setEmailModalVisible(false)}
-      >
-        <View style={styles.ModalContainer}>
-          <View style={[styles.ModalContent, { backgroundColor: isDark ? '#141921' : '#F5F5F5' }]}>
-            <Text style={[styles.ModalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-              {getText('emailModalTitle')}
-            </Text>
-
-            <TextInput
-              placeholder={getText('newEmail')}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={newEmail}
-              onChangeText={setNewEmail}
-              placeholderTextColor={isDark ? '#AAAAAA' : '#888888'}
-              style={[
-                styles.ModalInput,
-                { 
-                  backgroundColor: isDark ? '#52555A' : '#E0E0E0',
-                  color: isDark ? '#FFFFFF' : '#000000'
-                }
-              ]}
-            />
-            <TextInput
-              placeholder={getText('currentPassword')}
-              secureTextEntry
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholderTextColor={isDark ? '#AAAAAA' : '#888888'}
-              style={[
-                styles.ModalInput,
-                { 
-                  backgroundColor: isDark ? '#52555A' : '#E0E0E0',
-                  color: isDark ? '#FFFFFF' : '#000000'
-                }
-              ]}
-            />
-
-            <View style={styles.ModalButtonRow}>
-              <TouchableOpacity
-                style={[styles.ModalButton, styles.CancelButton, { backgroundColor: isDark ? '#DC3535' : '#FF6B6B' }]}
-                onPress={() => {
-                  setEmailModalVisible(false);
-                  setNewEmail(email); // Reset to current email
-                  setCurrentPassword('');
-                }}
-              >
-                <Text style={styles.ButtonText}>{getText('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.ModalButton, styles.SaveButton, { backgroundColor: isDark ? '#D17842' : '#0066CC' }]}
-                onPress={handleEmailChange}
-              >
-                <Text style={styles.ButtonText}>{getText('save')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
