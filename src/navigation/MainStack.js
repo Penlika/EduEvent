@@ -7,6 +7,8 @@ import AllCategory from '../Screens/Event/AllCategory';
 import EventDetail from '../component/EventDetail';
 import Schedule from '../Screens/Schedules/Schedule';
 import NewsDetail from '../component/NewDetail';
+import ChatScreen from '../Screens/Chat/ChatScreen';
+import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
 
 const Stack = createStackNavigator();
 
@@ -22,6 +24,8 @@ const MainStack = () => {
       <Stack.Screen name="EventDetail" component={EventDetail} />
       <Stack.Screen name="NewDetail" component={NewsDetail} />
       <Stack.Screen name="Schedule" component={Schedule} />
+      <Stack.Screen name="ChatScreen" component={ChatScreen} />
+      <Stack.Screen name="AllChatsScreen" component={AllChatsScreen} />
     </Stack.Navigator>
   );
 };

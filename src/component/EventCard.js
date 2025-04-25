@@ -22,7 +22,7 @@ const EventCard = ({ route, navigation }) => {
   useEffect(() => {
     const fetchEventData = async () => {
       try {
-        const docRef = firebase.firestore().collection('Events').doc(eventId);
+        const docRef = firebase.firestore().collection('event').doc(eventId);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
           setEventData(docSnap.data());
@@ -59,10 +59,6 @@ const EventCard = ({ route, navigation }) => {
     );
   }
 
-  // Giả sử eventData có cấu trúc:
-  // {
-  //   title, category, rating, price, location, time, about, instructor, reviews, ...
-  // }
 
   return (
     <View style={styles.container}>
@@ -118,16 +114,16 @@ const EventCard = ({ route, navigation }) => {
         </View>
 
         {/* Instructor */}
-        <Text style={styles.sectionTitle}>Instructor</Text>
+        <Text style={styles.sectionTitle}>Organizer</Text>
         <View style={styles.instructorContainer}>
           {/* Giả sử eventData.instructor = { name, avatar, field } */}
           <Image
-            source={{ uri: eventData.instructor?.avatar }}
+            source={{ uri: eventData.organizer?.avatar }}
             style={styles.instructorAvatar}
           />
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.instructorName}>{eventData.instructor?.name || 'Robert jr'}</Text>
-            <Text style={styles.instructorField}>{eventData.instructor?.field || 'Graphic Design'}</Text>
+            <Text style={styles.instructorName}>{eventData.organizer?.name || 'Robert jr'}</Text>
+            <Text style={styles.instructorField}>{eventData.organizer?.field || 'Graphic Design'}</Text>
           </View>
           {/* Icon chat hay comment */}
           <Icon name="chat-bubble-outline" size={20} color="#333" style={{ marginLeft: 'auto' }} />
