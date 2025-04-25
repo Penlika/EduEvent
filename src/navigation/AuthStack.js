@@ -6,6 +6,7 @@ import SignUp from '../Screens/Auth/SignUp';
 import ForgotPasswordScreen from '../Screens/Auth/ForgotPasswordScreen';
 import HomeScreen from '../Screens/Home/HomeScreen';
 import Login from '../Screens/Auth/Login';
+import TDMUAuthScreen from '../Screens/Auth/TDMUAuthScreen';
 
 const Stack = createStackNavigator();
 
@@ -16,6 +17,7 @@ const AuthStack = () => {
     screenOptions={{headerShown: false}}>
       {/* <Stack.Screen name="Welcome" component={Welcome} /> */}
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      <Stack.Screen name="TDMUAuth" component={TDMUAuthScreen}/>
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="SignUp" component={SignUp} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

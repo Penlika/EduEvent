@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import { GoogleAuthProvider } from '@react-native-firebase/auth';
+import {AuthContext} from '../LoginScreen/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { firestore } from '../../../firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
@@ -15,6 +19,7 @@ const LoginScreen = ({ navigation }) => {
     });
   
     const [loading, setLoading] = useState(false);
+    const [calendar, setCalendar] = useState(null);
     
     const saveUserToFirestore = async (user) => {
       if (!user) return;
@@ -30,7 +35,6 @@ const LoginScreen = ({ navigation }) => {
                   name: user.displayName || "",
                   email: user.email || "",
                   photoURL: user.photoURL || "",
-                  provider: "google",
                   createdAt: firestore.FieldValue.serverTimestamp(), // Store createdAt for new users
               });
               console.log("New user registered in Firestore");
@@ -41,7 +45,6 @@ const LoginScreen = ({ navigation }) => {
                       name: user.displayName || "",
                       email: user.email || "",
                       photoURL: user.photoURL || "",
-                      provider: "google",
                   },
                   { merge: true } // This ensures only the provided fields are updated, and createdAt stays the same
               );
@@ -51,7 +54,92 @@ const LoginScreen = ({ navigation }) => {
           console.error("Firestore Error:", error);
       }
     };
-
+    
+    // TDMU Calendar API integration
+    const fetchTDMUCalendar = async (user) => {
+      try {
+        setLoading(true);
+        
+        // Step 1: Get Google token for TDMU OAuth
+        const googleUser = await GoogleSignin.getCurrentUser();
+        const loginHint = encodeURIComponent(googleUser.user.email);
+        
+        // Creating the OAuth URL with the user's email
+        const oauthUrl = `https://accounts.google.com/o/oauth2/iframerpc?action=issueToken&response_type=token&login_hint=${loginHint}&client_id=79837717230-kttlrk5m6c41mps51smaofmf6j6jso6d.apps.googleusercontent.com&origin=https%3A%2F%2Fdkmh.tdmu.edu.vn&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email%20openid&ss_domain=https%3A%2F%2Fdkmh.tdmu.edu.vn&auto=1`;
+        
+        // We need to handle this OAuth flow differently in a mobile app
+        // This is a simplified representation - you might need a WebView to handle this
+        console.log("Starting TDMU authentication flow");
+        
+        // Create an axios instance with proper headers for TDMU APIs
+        const authToken = googleUser.idToken;
+        const tdmuApi = axios.create({
+          baseURL: 'https://dkmh.tdmu.edu.vn/api',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        
+        // Step 1: Login to TDMU system with the Google token
+        const loginResponse = await tdmuApi.post('/auth/login', {
+          token: authToken,
+          // You may need to check the actual required parameters
+          // in the TDMU API documentation or by examining network requests
+          grant_type: 'authorization_code' // Or whatever grant type they expect
+        });
+        
+        console.log("TDMU Login successful");
+        
+        // Store authentication token or session cookie
+        const tdmuAuthToken = loginResponse.data.token || '';
+        tdmuApi.defaults.headers.common['Authorization'] = `Bearer ${tdmuAuthToken}`;
+        
+        // Step 3: Validate functions access
+        await tdmuApi.get('/dkmh/w-checkvalidallchucnang');
+        console.log("Functions validation successful");
+        
+        // Step 4: Get semester list
+        const semesterResponse = await tdmuApi.get('/sch/w-locdshockytkbuser');
+        const currentSemester = semesterResponse.data[0]; // Assuming first one is current
+        console.log("Retrieved semester list");
+        
+        // Step 5: Get user list
+        const userListResponse = await tdmuApi.get('/sch/w-locdsdoituongthoikhoabieu');
+        console.log("Retrieved user list");
+        
+        // Step 6: Finally get calendar data
+        const calendarResponse = await tdmuApi.get('/sch/w-locdstkbtuanusertheohocky', {
+          params: {
+            hocky: currentSemester.id,
+            // Add any other required parameters
+          }
+        });
+        
+        console.log("Calendar data retrieved successfully");
+        setCalendar(calendarResponse.data);
+        
+        // Store calendar data in AsyncStorage for later use
+        await AsyncStorage.setItem('tdmu_calendar', JSON.stringify(calendarResponse.data));
+        
+        // Notify user of successful calendar retrieval
+        Alert.alert("Success", "Your TDMU calendar has been successfully loaded!");
+        
+        return calendarResponse.data;
+        
+      } catch (error) {
+        console.error("TDMU Calendar Error:", error?.response?.data || error?.message || error);
+        Alert.alert(
+          "Calendar Loading Error", 
+          "Failed to load your TDMU calendar. Please try again later."
+        );
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    };
+  
     const handleGoogleLogin = async () => {
       try {
         setLoading(true);
@@ -72,6 +160,9 @@ const LoginScreen = ({ navigation }) => {
     
         console.log("Google Sign-In Successful:", userCredential.user);
         
+        // Fetch TDMU calendar after successful login
+        await fetchTDMUCalendar(userCredential.user);
+    
         navigation.replace("MainStack");
     
         return userCredential.user;
@@ -82,11 +173,6 @@ const LoginScreen = ({ navigation }) => {
       } finally {
         setLoading(false);
       }
-    };
-
-    const handleTDMULogin = () => {
-      // Now directly navigates to the unified TDMU auth screen
-      navigation.navigate("TDMUAuth");
     };
 
   return (
@@ -101,17 +187,6 @@ const LoginScreen = ({ navigation }) => {
         <Image source={require('../../assets/images/google.png')} style={styles.icon} />
         <Text style={styles.buttonText}>
           {loading ? 'Loading...' : 'Continue with Google'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={[styles.socialButton, loading && styles.disabledButton]} 
-        onPress={handleTDMULogin}
-        disabled={loading}
-      >
-        <Icon name="book-open" size={width * 0.07} color="#333" style={styles.icon} />
-        <Text style={styles.buttonText}>
-          Continue with TDMU Account
         </Text>
       </TouchableOpacity>
 

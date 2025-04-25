@@ -10,7 +10,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import { StyleSheet } from 'react-native';
 import InboxScreen from '../Screens/Home/InboxScreen';
 import Schedule from '../Screens/Schedules/Schedule';
+
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
+
+import WeekSchedule from '../Screens/Profile/CalendarScreen';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -67,6 +70,7 @@ const BottomTabNavigator = () => {
       </Drawer.Screen>
       <Drawer.Screen name="Account" component={ProfileScreen} />
       <Drawer.Screen name="Setting" component={SettingScreen} />
+      <Drawer.Screen name="Schedule" component={WeekSchedule} />
     </Drawer.Navigator>
   );
 };
