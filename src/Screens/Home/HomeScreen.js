@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -19,20 +19,22 @@ import axios from 'axios';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
+import HeaderNotificationButton from '../../component/HeaderNotificationButton';
+
 const HomeScreen = () => {
   const navigation = useNavigation();
   const {theme} = useTheme();
   const isDark = theme === 'dark';
   const user = auth().currentUser;
-  
+
   // Translation states
   const [currentLang, setCurrentLang] = useState('en');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationCache, setTranslationCache] = useState({});
-  
+
   // Google Translate API key
   const GOOGLE_TRANSLATE_API_KEY = 'AIzaSyDcmLnMFuSVamZ8NeQ-DJFie0nEsiPug8Q';
-  
+
   // Original content that needs translation
   const originalContent = {
     greeting: 'Hi, ALEX',
@@ -52,14 +54,14 @@ const HomeScreen = () => {
     faculty1: 'Viện CNTT & CDS',
     faculty2: 'Khoa Ngoại Ngữ',
   };
-  
+
   // Storage for translated content
   const [translations, setTranslations] = useState({...originalContent});
-  
+
   // Setup real-time listener for language changes
   useEffect(() => {
     if (!user) return;
-    
+
     // Subscribe to user document changes in Firestore
     const unsubscribe = firestore()
       .collection('USER')
@@ -71,7 +73,7 @@ const HomeScreen = () => {
             if (userData.language && userData.language !== currentLang) {
               // Language has changed, update
               setCurrentLang(userData.language);
-              
+
               // If switching to English, reset to original content
               if (userData.language === 'en') {
                 console.log('Switching to English - resetting translations');
@@ -84,13 +86,13 @@ const HomeScreen = () => {
           }
         },
         error => {
-          console.error("Firestore snapshot error:", error);
-        }
+          console.error('Firestore snapshot error:', error);
+        },
       );
-    
+
     // Initial language fetch and translation
     fetchUserLanguage();
-    
+
     // Clean up listener on component unmount
     return () => unsubscribe();
   }, []);
@@ -100,7 +102,7 @@ const HomeScreen = () => {
     React.useCallback(() => {
       fetchUserLanguage();
       return () => {};
-    }, [])
+    }, []),
   );
 
   // Fetch user's language preference from Firestore
@@ -110,16 +112,16 @@ const HomeScreen = () => {
         const doc = await firestore().collection('USER').doc(user.uid).get();
         if (doc.exists) {
           const userLang = doc.data().language || 'en';
-          
+
           // Update current language state
           setCurrentLang(userLang);
-          
+
           // If English, explicitly reset to original content
           if (userLang === 'en') {
             console.log('Language is English - resetting to original content');
             setTranslations({...originalContent});
             setTranslationCache({});
-          } 
+          }
           // Only translate if the language is different and not English
           else if (userLang !== 'en') {
             translateAllContent(userLang);
@@ -138,13 +140,13 @@ const HomeScreen = () => {
   const translateText = async (text, targetLang) => {
     // Return original if language is English or text is empty
     if (targetLang === 'en' || !text) return text;
-    
+
     // Check if translation is already in cache
     const cacheKey = `${text}-${targetLang}`;
     if (translationCache[cacheKey]) {
       return translationCache[cacheKey];
     }
-    
+
     try {
       const response = await axios.post(
         `https://translation.googleapis.com/language/translate/v2`,
@@ -156,17 +158,17 @@ const HomeScreen = () => {
             format: 'text',
             key: GOOGLE_TRANSLATE_API_KEY,
           },
-        }
+        },
       );
-      
+
       const translatedText = response.data.data.translations[0].translatedText;
-      
+
       // Update cache
       setTranslationCache(prev => ({
         ...prev,
-        [cacheKey]: translatedText
+        [cacheKey]: translatedText,
       }));
-      
+
       return translatedText;
     } catch (error) {
       console.error('Translation API error:', error);
@@ -175,7 +177,7 @@ const HomeScreen = () => {
   };
 
   // Function to translate all content at once
-  const translateAllContent = async (targetLang) => {
+  const translateAllContent = async targetLang => {
     // Explicit check for English
     if (targetLang === 'en') {
       console.log('TranslateAllContent: Setting to English');
@@ -183,18 +185,20 @@ const HomeScreen = () => {
       setTranslationCache({});
       return;
     }
-    
+
     setIsTranslating(true);
-    
+
     try {
-      const translationPromises = Object.entries(originalContent).map(async ([key, value]) => {
-        const translatedText = await translateText(value, targetLang);
-        return [key, translatedText];
-      });
-      
+      const translationPromises = Object.entries(originalContent).map(
+        async ([key, value]) => {
+          const translatedText = await translateText(value, targetLang);
+          return [key, translatedText];
+        },
+      );
+
       const translatedEntries = await Promise.all(translationPromises);
       const newTranslations = Object.fromEntries(translatedEntries);
-      
+
       setTranslations(newTranslations);
     } catch (error) {
       console.error('Translation batch error:', error);
@@ -206,7 +210,7 @@ const HomeScreen = () => {
   };
 
   // Helper function to get translated text with safety fallback
-  const getText = (key) => {
+  const getText = key => {
     // Explicitly check if language is English to use original content
     if (currentLang === 'en') {
       return originalContent[key] || key;
@@ -216,9 +220,17 @@ const HomeScreen = () => {
 
   if (isTranslating) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#000' : '#F8FAFF' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: isDark ? '#000' : '#F8FAFF',
+        }}>
         <ActivityIndicator size="large" color="#007BFF" />
-        <Text style={{ marginTop: 20, color: isDark ? '#fff' : '#000' }}>Translating...</Text>
+        <Text style={{marginTop: 20, color: isDark ? '#fff' : '#000'}}>
+          Translating...
+        </Text>
       </View>
     );
   }
@@ -236,7 +248,7 @@ const HomeScreen = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginTop: hp(3),
+          marginTop: hp(4),
         }}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Text
@@ -248,10 +260,7 @@ const HomeScreen = () => {
             {getText('greeting')}
           </Text>
         </TouchableOpacity>
-        <Image
-          source={require('../../assets/images/notificationIcon.png')}
-          style={{width: 30, height: 30}}
-        />
+        <HeaderNotificationButton />
       </View>
       <Text style={{fontSize: wp(4), color: isDark ? '#ccc' : 'gray'}}>
         {getText('learnToday')}
@@ -353,15 +362,17 @@ const HomeScreen = () => {
           }}>
           {getText('popularEvent')}
         </Text>
-        <Text style={{fontSize: wp(4), color: '#007BFF'}}>{getText('seeAll')}</Text>
+        <Text style={{fontSize: wp(4), color: '#007BFF'}}>
+          {getText('seeAll')}
+        </Text>
       </View>
 
       {/* Event Filters */}
       <View style={{flexDirection: 'row', marginTop: hp(2)}}>
         {[
-          { key: 'allFilter', text: 'All' },
-          { key: 'recentEvents', text: 'Recent Events' },
-          { key: 'generalEvents', text: 'General Events' }
+          {key: 'allFilter', text: 'All'},
+          {key: 'recentEvents', text: 'Recent Events'},
+          {key: 'generalEvents', text: 'General Events'},
         ].map((item, index) => {
           const isSelected = index === 1;
           return (
@@ -380,11 +391,7 @@ const HomeScreen = () => {
               }}>
               <Text
                 style={{
-                  color: isSelected
-                    ? 'white'
-                    : isDark
-                    ? '#fff'
-                    : '#000',
+                  color: isSelected ? 'white' : isDark ? '#fff' : '#000',
                   fontSize: wp(3.5),
                 }}>
                 {getText(item.key)}
@@ -450,7 +457,9 @@ const HomeScreen = () => {
           }}>
           {getText('topMentor')}
         </Text>
-        <Text style={{fontSize: wp(4), color: '#007BFF'}}>{getText('seeAll')}</Text>
+        <Text style={{fontSize: wp(4), color: '#007BFF'}}>
+          {getText('seeAll')}
+        </Text>
       </View>
       <View style={{flexDirection: 'row', marginTop: hp(2)}}>
         {[1, 2, 3, 4].map((_, index) => (
@@ -465,7 +474,9 @@ const HomeScreen = () => {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{color: 'white'}}>{getText('mentorText')} {index + 1}</Text>
+            <Text style={{color: 'white'}}>
+              {getText('mentorText')} {index + 1}
+            </Text>
           </View>
         ))}
       </View>
