@@ -10,7 +10,6 @@ import NewsDetail from '../component/NewDetail';
 import ChatScreen from '../Screens/Chat/ChatScreen';
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
 import NotificationScreen from '../component/NotificationScreen';
-import QRScanner from '../component/QRScanner';
 
 const Stack = createStackNavigator();
 

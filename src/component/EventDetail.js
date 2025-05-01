@@ -19,7 +19,7 @@ import {useTheme} from './ThemeContext'; // Import the theme context
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
-
+import PushNotification from 'react-native-push-notification';
 import {handleRegister} from '../utils/handleRegister';
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
@@ -406,51 +406,17 @@ const EventDetail = ({route, navigation}) => {
     );
   }
   // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
-  const onPressRegister = async () => {
-    if (!user) {
-      Alert.alert('Error', 'Please login to register for events');
-      return;
-    }
+  const onPressRegister = () => {
+    const event = {
+      id: eventId,
+      title: eventData.title || '',
+      location: eventData.location || '',
+      time: eventData.time || '',
+      category: eventData.category || '',
+    };
 
-    try {
-      // Check if already registered
-      const registrationDoc = await firestore()
-        .collection('USER')
-        .doc(user.uid)
-        .collection('registeredEvents')
-        .doc(eventId)
-        .get();
-
-      if (registrationDoc.exists) {
-        Alert.alert('Error', 'You have already registered for this event');
-        return;
-      }
-
-      // If not registered, create new registration document
-      await firestore()
-        .collection('USER')
-        .doc(user.uid)
-        .collection('registeredEvents')
-        .doc(eventId)
-        .set({
-          eventId: eventId,
-          title: eventData.title || '',
-          location: eventData.location || '',
-          time: eventData.time || '',
-          category: eventData.category || '',
-          registeredAt: firestore.Timestamp.now(),
-          completed: false,
-          image: eventData.image || '',
-          organizerId: eventData.organizerId || ''
-        });
-
-      setIsRegistered(true);
-      Alert.alert('Success', 'Successfully registered for the event');
-      navigation.navigate('EventScreen');
-    } catch (error) {
-      console.error('Registration error:', error);
-      Alert.alert('Error', 'Failed to register for the event');
-    }
+    handleRegister(event);
+    navigation.navigate('EventScreen');
   };
 
   return (
@@ -595,7 +561,10 @@ const EventDetail = ({route, navigation}) => {
           {/* Icon chat */}
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('ChatScreen', { currentUserId: user.uid , organizerId: eventData.organizerId })
+              navigation.navigate('ChatScreen', {
+                currentUserId: user.uid,
+                organizerId: eventData.organizerId,
+              })
             }
             style={{marginLeft: 'auto'}}>
             <Icon
