@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   useColorScheme as _useColorScheme,
+  Alert,
 } from 'react-native';
 import {firebase} from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -26,6 +27,7 @@ const EventDetail = ({route, navigation}) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
   const user = auth().currentUser;
+  const [isRegistered, setIsRegistered] = useState(false);
 
   // Get theme from context
   const {theme} = useTheme();
@@ -350,6 +352,27 @@ const EventDetail = ({route, navigation}) => {
     fetchEventData();
   }, [eventId]);
 
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (user && eventId) {
+        try {
+          const registrationDoc = await firestore()
+            .collection('USER')
+            .doc(user.uid)
+            .collection('registeredEvents')
+            .doc(eventId)
+            .get();
+          
+          setIsRegistered(registrationDoc.exists);
+        } catch (error) {
+          console.error('Error checking registration:', error);
+        }
+      }
+    };
+
+    checkRegistration();
+  }, [user, eventId]);
+
   const handleBack = () => {
     navigation.goBack();
   };
@@ -383,7 +406,7 @@ const EventDetail = ({route, navigation}) => {
     );
   }
   // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
-  const onPressRegister = async () => {
+  const onPressRegister = () => {
     const event = {
       id: eventId,
       title: eventData.title || '',
@@ -393,12 +416,6 @@ const EventDetail = ({route, navigation}) => {
     };
 
     handleRegister(event);
-
-    const userId = auth().currentUser?.uid;
-    if (!userId) return;
-
-    
-    //Điều hướng về EventScreen
     navigation.navigate('EventScreen');
   };
 
@@ -630,22 +647,39 @@ const EventDetail = ({route, navigation}) => {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.registerBtn} onPress={onPressRegister}>
-        <Text style={styles.registerBtnText}>Register for the event</Text>
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            backgroundColor: 'white',
-            borderRadius: 30,
-            justifyContent: 'center',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOpacity: 0.3,
-            shadowRadius: 5,
-            shadowOffset: {width: 0, height: 2},
-          }}>
-          <Icon name="arrow-right" size={30} color="#007AFF" />
+      <TouchableOpacity 
+        style={[
+          styles.registerBtn,
+          isRegistered && { backgroundColor: '#28a745' }
+        ]} 
+        onPress={() => {
+          if (isRegistered) {
+            navigation.navigate('QRScanner', { eventId });
+          } else {
+            onPressRegister();
+          }
+        }}
+      >
+        <Text style={styles.registerBtnText}>
+          {isRegistered ? 'Scan QR Code' : getText('register')}
+        </Text>
+        <View style={{
+          width: 40,
+          height: 40,
+          backgroundColor: 'white',
+          borderRadius: 30,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowRadius: 5,
+          shadowOffset: {width: 0, height: 2},
+        }}>
+          <Icon 
+            name={isRegistered ? "qrcode-scan" : "arrow-right"} 
+            size={30} 
+            color={isRegistered ? '#28a745' : '#007AFF'} 
+          />
         </View>
       </TouchableOpacity>
     </View>
