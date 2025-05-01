@@ -19,7 +19,7 @@ import {useTheme} from './ThemeContext'; // Import the theme context
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
-import PushNotification from 'react-native-push-notification';
+
 import {handleRegister} from '../utils/handleRegister';
 
 const EventDetail = ({route, navigation}) => {
@@ -596,10 +596,7 @@ const EventDetail = ({route, navigation}) => {
           {/* Icon chat */}
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('ChatScreen', {
-                currentUserId: user.uid,
-                organizerId: eventData.organizerId,
-              })
+              navigation.navigate('ChatScreen', { currentUserId: user.uid , organizerId: eventData.organizerId })
             }
             style={{marginLeft: 'auto'}}>
             <Icon
