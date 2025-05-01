@@ -6,6 +6,7 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firestore } from '../../../firebaseConfig';
+import axios from 'axios';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,23 +59,51 @@ const LoginScreen = ({ navigation }) => {
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
         await GoogleSignin.signOut(); // Force logout
         const userInfo = await GoogleSignin.signIn();
-        
-        if (!userInfo.idToken) {
-          const tokens = await GoogleSignin.getTokens();
-          if (!tokens.idToken) throw new Error("Google Sign-In failed: No idToken returned.");
-          userInfo.idToken = tokens.idToken;
+    
+        const tokens = await GoogleSignin.getTokens();
+        const googleAccessToken = tokens.accessToken;
+    
+        if (!tokens.idToken || !googleAccessToken) {
+          throw new Error("Missing Google tokens.");
         }
     
-        const googleCredential = auth.GoogleAuthProvider.credential(userInfo.idToken);
+        const googleCredential = auth.GoogleAuthProvider.credential(tokens.idToken);
         const userCredential = await auth().signInWithCredential(googleCredential);
     
         await saveUserToFirestore(userCredential.user);
     
-        console.log("Google Sign-In Successful:", userCredential.user);
-        
-        navigation.replace("MainStack");
+        // 🔐 Log into TDMU with Google accessToken as "password"
+        const tdmuLoginPayload = {
+          username: 'user@gw',
+          password: googleAccessToken,
+          grant_type: 'password',
+        };
     
+        try {
+          const tdmuResponse = await axios.post(
+            'https://dkmh.tdmu.edu.vn/api/auth/login',
+            new URLSearchParams(tdmuLoginPayload).toString(),
+            {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+            }
+          );
+    
+          const tdmuData = tdmuResponse.data;
+          console.log("✅ Logged into TDMU:", tdmuData);
+    
+          // Optionally store the TDMU token for future requests
+          await AsyncStorage.setItem('tdmu_token', tdmuData.access_token);
+    
+        } catch (tdmuError) {
+          console.error("❌ TDMU Login Failed:", tdmuError?.response?.data || tdmuError.message);
+          Alert.alert("TDMU Login Error", "Unable to authenticate with TDMU.");
+        }
+    
+        navigation.replace("MainStack");
         return userCredential.user;
+    
       } catch (error) {
         console.error("Google Sign-In Error:", error?.message || error);
         Alert.alert("Google Sign-In Error", error?.message || "An unexpected error occurred.");
@@ -82,11 +111,6 @@ const LoginScreen = ({ navigation }) => {
       } finally {
         setLoading(false);
       }
-    };
-
-    const handleTDMULogin = () => {
-      // Now directly navigates to the unified TDMU auth screen
-      navigation.navigate("TDMUAuth");
     };
 
   return (
@@ -104,16 +128,6 @@ const LoginScreen = ({ navigation }) => {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.socialButton, loading && styles.disabledButton]} 
-        onPress={handleTDMULogin}
-        disabled={loading}
-      >
-        <Icon name="book-open" size={width * 0.07} color="#333" style={styles.icon} />
-        <Text style={styles.buttonText}>
-          Continue with TDMU Account
-        </Text>
-      </TouchableOpacity>
 
       <Text style={styles.orText}>( Or )</Text>
 
