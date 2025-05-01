@@ -18,7 +18,7 @@ import {useTheme} from './ThemeContext'; // Import the theme context
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
-
+import PushNotification from 'react-native-push-notification';
 import {handleRegister} from '../utils/handleRegister';
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
@@ -383,7 +383,7 @@ const EventDetail = ({route, navigation}) => {
     );
   }
   // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
-  const onPressRegister = () => {
+  const onPressRegister = async () => {
     const event = {
       id: eventId,
       title: eventData.title || '',
@@ -393,6 +393,12 @@ const EventDetail = ({route, navigation}) => {
     };
 
     handleRegister(event);
+
+    const userId = auth().currentUser?.uid;
+    if (!userId) return;
+
+    
+    //Điều hướng về EventScreen
     navigation.navigate('EventScreen');
   };
 
@@ -538,7 +544,10 @@ const EventDetail = ({route, navigation}) => {
           {/* Icon chat */}
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('ChatScreen', { currentUserId: user.uid , organizerId: eventData.organizerId })
+              navigation.navigate('ChatScreen', {
+                currentUserId: user.uid,
+                organizerId: eventData.organizerId,
+              })
             }
             style={{marginLeft: 'auto'}}>
             <Icon

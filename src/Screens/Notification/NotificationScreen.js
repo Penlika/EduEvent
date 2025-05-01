@@ -109,20 +109,21 @@ const NotificationScreen = ({ navigation }) => {
     return sections;
   };
 
-  const sections = groupNotificationsByDate();
+  const sections = groupNotificationsByDate();  
+  
 
   const getIconByType = type => {
     switch (type) {
       case 'new_event':
-        return require('../assets/icons/event.png');
+        return require('../../assets/icons/event.png');
       case 'event_joined':
-        return require('../assets/icons/success.png');
+        return require('../../assets/icons/success.png');
       case 'event_failed':
-        return require('../assets/icons/fail.png');
+        return require('../../assets/icons/fail.png');
       case 'account_setup':
-        return require('../assets/icons/account.png');
+        return require('../../assets/icons/account.png');
       default:
-        return require('../assets/icons/default.png');
+        return require('../../assets/icons/default.png');
     }
   };
 
@@ -177,7 +178,7 @@ const NotificationScreen = ({ navigation }) => {
             style={{
               fontSize: 18,
               fontWeight: 'bold',
-              marginVertical: 5, // giảm khoảng cách giữa tiêu đề và nội dung
+              marginVertical: 5, 
             }}
           >
             {title}
