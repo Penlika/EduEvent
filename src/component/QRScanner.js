@@ -66,10 +66,8 @@ const QRScanner = ({ route, navigation }) => {
 
   const handleQRCodeScanned = async ({ data }) => {
     try {
-      // Parse QR code data (expected format: "eventId:latitude:longitude")
       const [scannedEventId, eventLat, eventLon] = data.split(':');
 
-      // Verify if scanned event ID matches the current event
       if (scannedEventId !== eventId) {
         Alert.alert('Error', 'Invalid QR code for this event');
         return;
@@ -79,8 +77,6 @@ const QRScanner = ({ route, navigation }) => {
       Geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          
-          // Calculate distance
           const distance = calculateDistance(
             latitude,
             longitude,
@@ -88,17 +84,19 @@ const QRScanner = ({ route, navigation }) => {
             parseFloat(eventLon)
           );
 
-          // Check if within 20 meters
           if (distance <= 20) {
-            // Update event completion status
             const userId = auth().currentUser.uid;
+            
+            // Update the completion status in USER collection
             await firestore()
               .collection('USER')
               .doc(userId)
-              .collection('schedule')
+              .collection('registeredEvents')
               .doc(eventId)
               .update({
                 completed: true,
+                completedAt: firestore.Timestamp.now(),
+                completionLocation: new firestore.GeoPoint(latitude, longitude)
               });
 
             Alert.alert(
@@ -107,10 +105,7 @@ const QRScanner = ({ route, navigation }) => {
               [{ text: 'OK', onPress: () => navigation.goBack() }]
             );
           } else {
-            Alert.alert(
-              'Error',
-              'You must be within 20 meters of the event location'
-            );
+            Alert.alert('Error', 'You must be within 20 meters of the event location');
           }
         },
         (error) => Alert.alert('Error', 'Unable to get location'),

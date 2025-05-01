@@ -356,14 +356,14 @@ const EventDetail = ({route, navigation}) => {
     const checkRegistration = async () => {
       if (user && eventId) {
         try {
-          const docRef = firestore()
+          const registrationDoc = await firestore()
             .collection('USER')
             .doc(user.uid)
-            .collection('schedule')
-            .doc(eventId);
+            .collection('registeredEvents')
+            .doc(eventId)
+            .get();
           
-          const doc = await docRef.get();
-          setIsRegistered(doc.exists);
+          setIsRegistered(registrationDoc.exists);
         } catch (error) {
           console.error('Error checking registration:', error);
         }
@@ -412,32 +412,45 @@ const EventDetail = ({route, navigation}) => {
       return;
     }
 
-    // Check if already registered
-    const registrationRef = firestore()
-      .collection('USER')
-      .doc(user.uid)
-      .collection('schedule')
-      .doc(eventId);
+    try {
+      // Check if already registered
+      const registrationDoc = await firestore()
+        .collection('USER')
+        .doc(user.uid)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .get();
 
-    const registrationDoc = await registrationRef.get();
+      if (registrationDoc.exists) {
+        Alert.alert('Error', 'You have already registered for this event');
+        return;
+      }
 
-    if (registrationDoc.exists) {
-      Alert.alert('Error', 'You have already registered for this event');
-      return;
+      // If not registered, create new registration document
+      await firestore()
+        .collection('USER')
+        .doc(user.uid)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .set({
+          eventId: eventId,
+          title: eventData.title || '',
+          location: eventData.location || '',
+          time: eventData.time || '',
+          category: eventData.category || '',
+          registeredAt: firestore.Timestamp.now(),
+          completed: false,
+          image: eventData.image || '',
+          organizerId: eventData.organizerId || ''
+        });
+
+      setIsRegistered(true);
+      Alert.alert('Success', 'Successfully registered for the event');
+      navigation.navigate('EventScreen');
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Error', 'Failed to register for the event');
     }
-
-    // If not registered, proceed with registration
-    const event = {
-      id: eventId,
-      title: eventData.title || '',
-      location: eventData.location || '',
-      time: eventData.time || '',
-      category: eventData.category || '',
-    };
-
-    await handleRegister(event);
-    setIsRegistered(true); // Update local state
-    navigation.navigate('EventScreen');
   };
 
   return (
