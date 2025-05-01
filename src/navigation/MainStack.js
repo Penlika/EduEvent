@@ -10,6 +10,7 @@ import NewsDetail from '../component/NewDetail';
 import ChatScreen from '../Screens/Chat/ChatScreen';
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
 import NotificationScreen from '../component/NotificationScreen';
+import QRScanner from '../component/QRScanner';
 
 const Stack = createStackNavigator();
 
@@ -23,6 +24,7 @@ const MainStack = () => {
       <Stack.Screen name="Tabs" component={BottomTabNavigator} />
       <Stack.Screen name="AllCategory" component={AllCategory} />
       <Stack.Screen name="EventDetail" component={EventDetail} />
+      <Stack.Screen name="QRScanner" component={QRScanner} />
       <Stack.Screen name="NewDetail" component={NewsDetail} />
       <Stack.Screen name="Schedule" component={Schedule} />
       <Stack.Screen name="ChatScreen" component={ChatScreen} />
