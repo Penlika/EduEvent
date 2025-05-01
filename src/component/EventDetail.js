@@ -21,6 +21,7 @@ import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
 import PushNotification from 'react-native-push-notification';
 import {handleRegister} from '../utils/handleRegister';
+
 const EventDetail = ({route, navigation}) => {
   const {eventId} = route.params;
   const [eventData, setEventData] = useState(null);
@@ -406,17 +407,51 @@ const EventDetail = ({route, navigation}) => {
     );
   }
   // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
-  const onPressRegister = () => {
-    const event = {
-      id: eventId,
-      title: eventData.title || '',
-      location: eventData.location || '',
-      time: eventData.time || '',
-      category: eventData.category || '',
-    };
+  const onPressRegister = async () => {
+    if (!user) {
+      Alert.alert('Error', 'Please login to register for events');
+      return;
+    }
 
-    handleRegister(event);
-    navigation.navigate('EventScreen');
+    try {
+      // Check if already registered
+      const registrationDoc = await firestore()
+        .collection('USER')
+        .doc(user.uid)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .get();
+
+      if (registrationDoc.exists) {
+        Alert.alert('Error', 'You have already registered for this event');
+        return;
+      }
+
+      // If not registered, create new registration document
+      await firestore()
+        .collection('USER')
+        .doc(user.uid)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .set({
+          eventId: eventId,
+          title: eventData.title || '',
+          location: eventData.location || '',
+          time: eventData.time || '',
+          category: eventData.category || '',
+          registeredAt: firestore.Timestamp.now(),
+          completed: false,
+          image: eventData.image || '',
+          organizerId: eventData.organizerId || ''
+        });
+
+      setIsRegistered(true);
+      Alert.alert('Success', 'Successfully registered for the event');
+      navigation.navigate('EventScreen');
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Error', 'Failed to register for the event');
+    }
   };
 
   return (

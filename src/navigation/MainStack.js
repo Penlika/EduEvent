@@ -9,7 +9,8 @@ import Schedule from '../Screens/Schedules/Schedule';
 import NewsDetail from '../component/NewDetail';
 import ChatScreen from '../Screens/Chat/ChatScreen';
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
-import NotificationScreen from '../component/NotificationScreen';
+import QRScanner from '../component/QRScanner';
+import NotificationScreen from '../Screens/Notification/NotificationScreen';
 
 const Stack = createStackNavigator();
 
