@@ -10,10 +10,8 @@ import Icon from 'react-native-vector-icons/Feather';
 import { StyleSheet } from 'react-native';
 import InboxScreen from '../Screens/Home/InboxScreen';
 import Schedule from '../Screens/Schedules/Schedule';
-
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
-
-import WeekSchedule from '../Screens/Profile/CalendarScreen';
+import WeekSchedule from '../Screens/Profile/ScheduleScreen';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
