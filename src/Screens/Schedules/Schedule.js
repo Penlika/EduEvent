@@ -6,48 +6,66 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Schedule = ({navigation}) => {
+  const [userId, setUserId] = useState(null);
   const [events, setEvents] = useState([]);
-  const [activeTab, setActiveTab] = useState('Completed'); // hoặc 'Completed'
+  const [activeTab, setActiveTab] = useState('Completed');
   const [searchText, setSearchText] = useState('');
-
   const handleBack = () => {
     navigation.goBack();
   };
   useEffect(() => {
-    const fetchRegisteredEvents = async () => {
-      const user = auth().currentUser;
-      if (!user) return;
-
-      try {
-        const userDoc = await firestore()
-          .collection('USER')
-          .doc(user.uid)
-          .get();
-        const registered = userDoc.data()?.registeredEvents || [];
-        setEvents(registered);
-      } catch (err) {
-        console.error('Lỗi lấy sự kiện đã đăng ký:', err);
-      }
-    };
-
-    fetchRegisteredEvents();
+    const currentUser = auth().currentUser;
+    if (currentUser) {
+      setUserId(currentUser.uid);
+    }
   }, []);
+  
+  useEffect(() => {
+  if (!userId) return;
+
+  const fetchRegisteredEvents = async () => {
+    try {
+      const querySnapshot = await firestore()
+        .collection('USER')
+        .doc(userId)
+        .collection('registeredEvents')
+        .get();
+
+      const registered = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setEvents(registered);
+
+      const eventIds = registered.map(event => event.id).join('\n');
+      Alert.alert('User ID & Event IDs', `User ID:\n${userId}\n\nEvent IDs:\n${eventIds}`);
+    } catch (err) {
+      console.error('Lỗi lấy sự kiện đã đăng ký:', err);
+    }
+  };
+
+  fetchRegisteredEvents();
+}, [userId]);
+
   // search
+
   const filteredEvents = events
     .filter(event =>
       event.title.toLowerCase().includes(searchText.toLowerCase()),
     )
     .filter(event => {
       if (activeTab === 'Completed') {
-        return event.complete === true;
+        return event.completed === true;
       } else {
-        return event.complete !== true;
+        return event.completed !== true;
       }
     });
 

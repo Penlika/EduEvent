@@ -27,13 +27,12 @@ const EventDetail = ({route, navigation}) => {
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
-  const user = auth().currentUser;
+  const userId = auth().currentUser?.uid;
   const [isRegistered, setIsRegistered] = useState(false);
-
+  
   // Get theme from context
   const {theme} = useTheme();
   const isDark = theme === 'dark';
-
   // Translation states
   const [currentLang, setCurrentLang] = useState('en');
   const [isTranslating, setIsTranslating] = useState(false);
@@ -61,12 +60,12 @@ const EventDetail = ({route, navigation}) => {
 
   // Setup real-time listener for language changes
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     // Subscribe to user document changes in Firestore
     const unsubscribe = firestore()
       .collection('USER')
-      .doc(user.uid)
+      .doc(userId)
       .onSnapshot(
         snapshot => {
           if (snapshot.exists) {
@@ -99,9 +98,9 @@ const EventDetail = ({route, navigation}) => {
 
   // Fetch user's language preference from Firestore
   const fetchUserLanguage = async () => {
-    if (user) {
+    if (userId) return; {
       try {
-        const doc = await firestore().collection('USER').doc(user.uid).get();
+        const doc = await firestore().collection('USER').doc(userId).get();
         if (doc.exists && doc.data().language) {
           const userLang = doc.data().language;
 
@@ -355,11 +354,11 @@ const EventDetail = ({route, navigation}) => {
 
   useEffect(() => {
     const checkRegistration = async () => {
-      if (user && eventId) {
+      if (userId && eventId) {
         try {
           const registrationDoc = await firestore()
             .collection('USER')
-            .doc(user.uid)
+            .doc(userId)
             .collection('registeredEvents')
             .doc(eventId)
             .get();
@@ -372,7 +371,7 @@ const EventDetail = ({route, navigation}) => {
     };
 
     checkRegistration();
-  }, [user, eventId]);
+  }, [userId, eventId]);
 
   const handleBack = () => {
     navigation.goBack();
@@ -408,7 +407,7 @@ const EventDetail = ({route, navigation}) => {
   }
   // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
   const onPressRegister = async () => {
-    if (!user) {
+    if (!userId) {
       Alert.alert('Error', 'Please login to register for events');
       return;
     }
@@ -417,20 +416,19 @@ const EventDetail = ({route, navigation}) => {
       // Check if already registered
       const registrationDoc = await firestore()
         .collection('USER')
-        .doc(user.uid)
+        .doc(userId)
         .collection('registeredEvents')
         .doc(eventId)
         .get();
 
-      if (registrationDoc.exists) {
+      if (!registrationDoc.exists) {
         Alert.alert('Error', 'You have already registered for this event');
         return;
       }
 
-      // If not registered, create new registration document
       await firestore()
         .collection('USER')
-        .doc(user.uid)
+        .doc(userId)
         .collection('registeredEvents')
         .doc(eventId)
         .set({
@@ -447,6 +445,19 @@ const EventDetail = ({route, navigation}) => {
 
       setIsRegistered(true);
       Alert.alert('Success', 'Successfully registered for the event');
+      //   Gửi vào Firestore: thông báo đăng ký sự kiện thành công
+      await firestore()
+      .collection('USER')
+      .doc(userId)
+      .collection('notifications')
+      .add({
+        title: 'Đăng ký sự kiện thành công',
+        body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
+        type: 'event_joined',
+        isRead: false,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
+      // qua event screen
       navigation.navigate('EventScreen');
     } catch (error) {
       console.error('Registration error:', error);
@@ -596,7 +607,7 @@ const EventDetail = ({route, navigation}) => {
           {/* Icon chat */}
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('ChatScreen', { currentUserId: user.uid , organizerId: eventData.organizerId })
+              navigation.navigate('ChatScreen', { currentUserId: userId , organizerId: eventData.organizerId })
             }
             style={{marginLeft: 'auto'}}>
             <Icon
