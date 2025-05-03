@@ -32,13 +32,13 @@ const ScheduleScreen = () => {
   
   // Vietnamese day name conversion
   const dayNames = {
-    1: 'Thứ hai',
-    2: 'Thứ ba',
-    3: 'Thứ tư',
-    4: 'Thứ năm',
-    5: 'Thứ sáu',
-    6: 'Thứ bảy',
-    7: 'Chủ nhật',
+    2: 'Thứ hai',
+    3: 'Thứ ba', 
+    4: 'Thứ tư',
+    5: 'Thứ năm',
+    6: 'Thứ sáu',
+    7: 'Thứ bảy',
+    1: 'Chủ nhật',
   };
 
   useEffect(() => {
@@ -268,21 +268,48 @@ const ScheduleScreen = () => {
     }
   };
 
-  // Convert class period to display time
+  // Update the formatClassTime function to handle 10 periods
   const formatClassTime = (startPeriod, totalPeriods) => {
-    // Mapping of period numbers to time
+    // Define period time slots with breaks
     const periodTimes = {
-      1: '07:00', 2: '07:45', 3: '08:30', 4: '09:30', 
-      5: '10:15', 6: '11:00', 7: '13:00', 8: '13:45',
-      9: '14:30', 10: '15:30', 11: '16:15', 12: '17:00',
-      13: '17:45', 14: '18:30', 15: '19:15', 16: '20:00'
+      1: { start: '07:00', end: '07:50' },
+      2: { start: '07:50', end: '08:40' },
+      3: { start: '08:40', end: '09:30' },
+      // 20-minute break
+      4: { start: '09:50', end: '10:40' },
+      5: { start: '10:40', end: '11:30' },
+      // Lunch break
+      6: { start: '12:30', end: '13:20' },
+      7: { start: '13:20', end: '14:10' },
+      8: { start: '14:10', end: '15:00' },
+      9: { start: '15:00', end: '15:50' },
+      10: { start: '15:50', end: '16:40' }
     };
+
+    // Add visual indicators for breaks
+    const breakIndicators = {
+      3: ' → 20p nghỉ → ',
+      5: ' → Nghỉ trưa → '
+    };
+
+    const endPeriod = startPeriod + (totalPeriods - 1);
     
-    const endPeriod = startPeriod + totalPeriods - 1;
-    const startTime = periodTimes[startPeriod] || `Tiết ${startPeriod}`;
-    const endTime = periodTimes[endPeriod + 1] || `Tiết ${endPeriod}`;
-    
-    return `${startTime} - ${endTime}`;
+    if (!periodTimes[startPeriod] || !periodTimes[endPeriod]) {
+      return `Tiết ${startPeriod} - ${endPeriod}`;
+    }
+
+    let timeString = `${periodTimes[startPeriod].start} - `;
+
+    // Add break indicators if the class spans across breaks
+    for (let i = startPeriod; i < endPeriod; i++) {
+      if (breakIndicators[i]) {
+        timeString += periodTimes[i].end + breakIndicators[i];
+      }
+    }
+
+    timeString += periodTimes[endPeriod].end;
+
+    return timeString;
   };
 
   // Check if class is online
@@ -290,50 +317,45 @@ const ScheduleScreen = () => {
     return room?.toLowerCase().includes('online') || room?.toLowerCase().includes('elearning');
   };
 
+  // Update TimeSidebar component
+  const TimeSidebar = () => (
+    <View style={styles.timeSidebar}>
+      {[...Array(10)].map((_, index) => (
+        <View key={index} style={styles.periodContainer}>
+          <Text style={styles.periodText}>Tiết {index + 1}</Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  // Update renderClassItem component
   const renderClassItem = ({ item }) => {
-    // Determine if the class is online
-    const online = isOnlineClass(item.ma_phong);
+    const PERIOD_HEIGHT = 45; // Match the new period height
+    const topPosition = (item.tiet_bat_dau - 1) * PERIOD_HEIGHT;
+    const height = item.so_tiet * PERIOD_HEIGHT;
     
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.subject}>{item.ten_mon}</Text>
-          <View style={[
-            styles.badge, 
-            online ? styles.onlineBadge : styles.physicBadge
-          ]}>
-            <Text style={styles.badgeText}>
-              {online ? 'Online' : 'Phòng học'}
-            </Text>
-          </View>
-        </View>
-        
+      <View style={[
+        styles.card,
+        {
+          position: 'absolute',
+          top: topPosition,
+          height: height,
+          left: 0,
+          right: 0,
+          marginLeft: 8,
+          marginRight: 8
+        }
+      ]}>
+        <Text style={styles.subject}>{item.ten_mon}</Text>
+        {item.ma_nhom && (
+          <Text style={styles.groupText}>Nhóm: {item.ma_nhom}</Text>
+        )}
         <View style={styles.classDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailTitle}>Thời gian:</Text>
-            <Text style={styles.detailContent}>
-              {dayNames[item.thu_kieu_so] || `Thứ ${item.thu}`} ({formatClassTime(item.tiet_bat_dau, 5)})
-            </Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailTitle}>Địa điểm:</Text>
-            <Text style={styles.detailContent}>
-              {item.ma_phong?.split('-')[0] || item.ma_phong}
-            </Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailTitle}>Giảng viên:</Text>
-            <Text style={styles.detailContent}>{item.ten_giang_vien}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailTitle}>Ngày học:</Text>
-            <Text style={styles.detailContent}>
-              {new Date(item.ngay_hoc).toLocaleDateString('vi-VN')}
-            </Text>
-          </View>
+          <Text style={styles.detailText}>Thời gian: {dayNames[item.thu_kieu_so] || `Thứ ${item.thu}`}</Text>
+          <Text style={styles.detailText}>Địa điểm: {item.ma_phong}</Text>
+          <Text style={styles.detailText}>GV: {item.ten_giang_vien}</Text>
+          <Text style={styles.detailText}>Ngày học: {new Date(item.ngay_hoc).toLocaleDateString('vi-VN')}</Text>
         </View>
       </View>
     );
@@ -383,6 +405,55 @@ const ScheduleScreen = () => {
       </Text>
     </TouchableOpacity>
   );
+
+  // Add or update these styles
+  const additionalStyles = {
+    timeSidebar: {
+      width: 60,
+      backgroundColor: '#0066CC', // Blue background like the example
+    },
+    periodContainer: {
+      height: 45, // Reduced from 60px to 45px
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: '#FFFFFF',
+    },
+    periodText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    card: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 8,
+      padding: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    subject: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#0066CC',
+      marginBottom: 4,
+    },
+    groupText: {
+      fontSize: 14,
+      color: '#666666',
+      marginBottom: 8,
+    },
+    classDetails: {
+      marginTop: 8,
+    },
+    detailText: {
+      fontSize: 14,
+      color: '#444444',
+      marginBottom: 4,
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -443,26 +514,8 @@ const ScheduleScreen = () => {
               </Text>
             </TouchableOpacity>
             
-            {/* CN (Sunday) is now first in the row */}
-            <TouchableOpacity
-              style={[
-                styles.dayFilter, 
-                filterDay === 7 && styles.dayFilterActive,
-                daysWithClasses[7] && !filterDay && styles.dayFilterHasClasses,
-                filterDay === 7 ? styles.dayFilterActive : (daysWithClasses[7] ? styles.dayFilterHasClasses : {})
-              ]}
-              onPress={() => setFilterDay(filterDay === 7 ? null : 7)}
-            >
-              <Text style={[
-                styles.dayFilterText,
-                (filterDay === 7 || (daysWithClasses[7] && !filterDay)) && styles.dayFilterTextActive
-              ]}>
-                CN
-              </Text>
-            </TouchableOpacity>
-            
             {/* Monday through Saturday */}
-            {[2, 3, 4, 5, 6].map(day => {
+            {[2, 3, 4, 5, 6, 7].map(day => {
               const hasClasses = daysWithClasses[day];
               
               return (
@@ -478,13 +531,13 @@ const ScheduleScreen = () => {
                     styles.dayFilterText,
                     (filterDay === day || (hasClasses && !filterDay)) && styles.dayFilterTextActive
                   ]}>
-                    T{day}
+                    T{day === 7 ? '7' : day}
                   </Text>
                 </TouchableOpacity>
               );
             })}
             
-            {/* Saturday */}
+            {/* Sunday (CN) */}
             <TouchableOpacity
               style={[
                 styles.dayFilter, 
@@ -496,28 +549,24 @@ const ScheduleScreen = () => {
                 styles.dayFilterText,
                 (filterDay === 1 || (daysWithClasses[1] && !filterDay)) && styles.dayFilterTextActive
               ]}>
-                T7
+                CN
               </Text>
             </TouchableOpacity>
           </View>
           
           {/* Schedule List */}
           {groupedSchedule.length > 0 ? (
-            <SectionList
-              sections={groupedSchedule}
-              keyExtractor={(item, index) => item.id_tkb || index.toString()}
-              renderItem={renderClassItem}
-              renderSectionHeader={renderSectionHeader}
-              contentContainerStyle={styles.list}
-              stickySectionHeadersEnabled={true}
-            />
+            <View style={styles.scheduleContainer}>
+              <TimeSidebar />
+              <View style={styles.scheduleContent}>
+                {groupedSchedule.map(section => 
+                  section.data.map(item => renderClassItem({ item }))
+                )}
+              </View>
+            </View>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                {searchQuery || filterDay ? 
-                  'Không tìm thấy lịch học phù hợp với bộ lọc' : 
-                  'Không có lịch học nào trong tuần này'}
-              </Text>
+              <Text style={styles.emptyText}>Không có lịch học</Text>
             </View>
           )}
           
@@ -680,62 +729,32 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 8,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    overflow: 'hidden',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F8FAFC',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   subject: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#0052CC',
-    flex: 1,
+    color: '#0066CC',
+    marginBottom: 4,
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  onlineBadge: {
-    backgroundColor: '#DCFCE7',
-  },
-  physicBadge: {
-    backgroundColor: '#EFF6FF',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+  groupText: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 8,
   },
   classDetails: {
-    padding: 12,
+    marginTop: 8,
   },
-  detailRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  detailTitle: {
+  detailText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-    width: 80,
-  },
-  detailContent: {
-    fontSize: 14,
-    color: '#334155',
-    flex: 1,
+    color: '#444444',
+    marginBottom: 4,
   },
   emptyState: {
     flex: 1,
@@ -822,6 +841,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  scheduleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  timeSidebar: {
+    width: 60,
+    backgroundColor: '#0066CC',
+    height: 450, // Match scheduleContent height
+  },
+  periodContainer: {
+    height: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFFFFF',
+  },
+  periodText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  scheduleContent: {
+    flex: 1,
+    position: 'relative',
+    height: 450, // Keep this height fixed
+    backgroundColor: '#FFFFFF' // Add background color to hide excess space
   }
 });
 

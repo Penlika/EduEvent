@@ -367,7 +367,7 @@ const EventDetail = ({route, navigation}) => {
           console.log('Registration check:', {
             exists: registrationDoc.exists,
             eventId: eventId,
-            userId: user.uid
+            userId: userId
           });
           
           setIsRegistered(registrationDoc.exists);
