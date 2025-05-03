@@ -201,17 +201,21 @@ const EventScreen = ({ navigation }) => {
   };
 
   const fetchRegisteredEvents = async () => {
-    if (!user) return;
-
     try {
-      const userDoc = await firestore()
+      const querySnapshot = await firestore()
         .collection('USER')
         .doc(user.uid)
+        .collection('registeredEvents')
         .get();
-      const registered = userDoc.data()?.registeredEvents || [];
+
+      const registered = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
       setEvents(registered);
     } catch (err) {
-      console.error('Error fetching registered events:', err);
+      console.error('Lỗi lấy sự kiện đã đăng ký:', err);
     }
   };
 
@@ -222,9 +226,9 @@ const EventScreen = ({ navigation }) => {
     )
     .filter(event => {
       if (activeTab === 'Completed') {
-        return event.complete === true;
+        return event.completed === true;
       } else {
-        return event.complete !== true;
+        return event.completed !== true;
       }
     });
 

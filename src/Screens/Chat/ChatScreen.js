@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
@@ -14,6 +15,7 @@ import storage from '@react-native-firebase/storage';
 import {launchImageLibrary} from 'react-native-image-picker';
 import uuid from 'react-native-uuid';
 
+const {FieldValue} = firestore;
 const ChatScreen = ({navigation}) => {
   const route = useRoute();
   const {currentUserId, organizerId} = route.params;
@@ -48,13 +50,18 @@ const ChatScreen = ({navigation}) => {
   }, [organizerId]);
 
   useEffect(() => {
+    // Alert.alert(
+    //   `${chatId}`,
+    //   `id :\ncurrentUserId: ${currentUserId}\norganizerId: ${organizerId}`,
+    // );
     const checkChatExistence = async () => {
       const chatRef = firestore().collection('chats').doc(chatId);
       const chatDoc = await chatRef.get();
-  
-      if (!chatDoc.exists) {
+      Alert.alert(
+       `${chatDoc.exists()}`);
+      if (!chatDoc.exists()) {
         await chatRef.set({
-          createdAt: firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           participants: [currentUserId, organizerId],
           unreadCount: {
             [currentUserId]: 0,
@@ -68,9 +75,8 @@ const ChatScreen = ({navigation}) => {
         });
       }
     };
-  
+
     checkChatExistence();
-  
 
     const unsubscribe = firestore()
       .collection('chats')
@@ -90,34 +96,34 @@ const ChatScreen = ({navigation}) => {
 
   const sendMessage = async (imageUrl = null) => {
     if (!inputText && !imageUrl) return;
-  
+
     const otherUserId = organizerId;
-  
+
     const message = {
       text: inputText,
       senderId: currentUserId,
       imageUrl: imageUrl || null,
       createdAt: firestore.FieldValue.serverTimestamp(),
     };
-  
+
     const chatRef = firestore().collection('chats').doc(chatId);
     const chatDoc = await chatRef.get();
-    const unread = chatDoc.exists && chatDoc.data().unreadCount?.[otherUserId] || 0;
-  
+    const unread =
+      (chatDoc.exists && chatDoc.data().unreadCount?.[otherUserId]) || 0;
+
     await chatRef.collection('messages').add(message);
-  
+
     await chatRef.update({
       lastMessage: inputText || '[image]',
       [`unreadCount.${otherUserId}`]: unread + 1,
     });
-  
+
     setInputText('');
   };
-  
 
   const pickImage = async () => {
     const result = await launchImageLibrary({
-      mediaType: 'pho  to',
+      mediaType: 'photo',
       quality: 0.5,
     });
 
