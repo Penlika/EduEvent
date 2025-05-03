@@ -1,162 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
+  Linking,
   StyleSheet,
-  Text,
   View,
-  Alert,
-  TouchableOpacity,
-  PermissionsAndroid,
   Platform,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
-import QRCodeScanner from 'react-native-qrcode-scanner';
-import Geolocation from '@react-native-community/geolocation';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
-import { useTheme } from './ThemeContext';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
 
-const QRScanner = ({ route, navigation }) => {
-  const { eventId } = route.params;
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  const [hasPermission, setHasPermission] = useState(null);
+const QRScanner = ({ eventId }) => {
+  const cameraRef = useRef(null);
+  const device = useCameraDevice('back'); // Camera sau thường tốt hơn cho quét QR
+
+  // Cấu hình quét mã QR
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr', 'ean-13'], // Loại mã cần quét
+    onCodeScanned: (codes) => {
+      if (codes.length > 0) {
+        const qrValue = codes[0].value;
+        try {
+          // Phân tích dữ liệu mã QR
+          const [scannedEventId] = qrValue.split(':'); // Giả định mã QR có dạng "eventId:..."
+          
+          // Kiểm tra mã QR có khớp với sự kiện không
+          if (scannedEventId === eventId) {
+            Alert.alert('Thành Công', `Mã QR khớp với sự kiện ${eventId}`, [
+              { text: 'OK', onPress: () => console.log('Alert closed') },
+            ]);
+          } else {
+            Alert.alert('Lỗi', 'Mã QR không khớp với sự kiện này', [
+              { text: 'OK', onPress: () => console.log('Alert closed') },
+            ]);
+          }
+        } catch (error) {
+          Alert.alert('Lỗi', 'Không thể xử lý mã QR', [
+            { text: 'OK', onPress: () => console.log('Alert closed') },
+          ]);
+        }
+      }
+    },
+  });
 
   useEffect(() => {
-    requestLocationPermission();
+    const requestPermissions = async () => {
+      try {
+        // Yêu cầu quyền camera
+        const cameraPermission = await Camera.requestCameraPermission();
+        if (cameraPermission === 'denied') {
+          await Linking.openSettings();
+          return;
+        }
+
+        // Yêu cầu quyền lưu trữ cho Android (nếu cần lưu dữ liệu quét)
+        if (Platform.OS === 'android') {
+          const storagePermission = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: 'Quyền Truy Cập Bộ Nhớ',
+              message: 'Ứng dụng cần quyền truy cập bộ nhớ để lưu dữ liệu quét QR',
+              buttonPositive: 'Đồng ý',
+              buttonNegative: 'Hủy',
+              buttonNeutral: 'Hỏi Sau',
+            },
+          );
+          if (storagePermission !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.warn('Quyền truy cập bộ nhớ bị từ chối');
+          }
+        }
+      } catch (error) {
+        console.error('Yêu cầu quyền thất bại:', error);
+      }
+    };
+
+    requestPermissions();
   }, []);
 
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'ios') {
-      Geolocation.requestAuthorization('whenInUse');
-      setHasPermission(true);
-    } else {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: "Location Permission",
-            message: "This app needs access to location to verify your attendance.",
-            buttonNeutral: "Ask Me Later",
-            buttonNegative: "Cancel",
-            buttonPositive: "OK"
-          }
-        );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-  };
-
-  // Calculate distance between two coordinates in meters
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distance in meters
-  };
-
-  const handleQRCodeScanned = async ({ data }) => {
-    try {
-      const [scannedEventId, eventLat, eventLon] = data.split(':');
-
-      if (scannedEventId !== eventId) {
-        Alert.alert('Error', 'Invalid QR code for this event');
-        return;
-      }
-
-      // Get current location
-      Geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          const distance = calculateDistance(
-            latitude,
-            longitude,
-            parseFloat(eventLat),
-            parseFloat(eventLon)
-          );
-
-          if (distance <= 20) {
-            const userId = auth().currentUser.uid;
-            
-            // Update the completion status in USER collection
-            await firestore()
-              .collection('USER')
-              .doc(userId)
-              .collection('registeredEvents')
-              .doc(eventId)
-              .update({
-                completed: true,
-                completedAt: firestore.Timestamp.now(),
-                completionLocation: new firestore.GeoPoint(latitude, longitude)
-              });
-
-            Alert.alert(
-              'Success',
-              'Event attendance confirmed!',
-              [{ text: 'OK', onPress: () => navigation.goBack() }]
-            );
-          } else {
-            Alert.alert('Error', 'You must be within 20 meters of the event location');
-          }
-        },
-        (error) => Alert.alert('Error', 'Unable to get location'),
-        { enableHighAccuracy: true }
-      );
-    } catch (error) {
-      console.error('QR Scanner error:', error);
-      Alert.alert('Error', 'Failed to process QR code');
-    }
-  };
+  if (!device) {
+    return <View style={styles.loadingContainer} />;
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#fff' }]}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Icon name="arrow-left" size={24} color={isDark ? '#fff' : '#000'} />
-      </TouchableOpacity>
-      
-      <QRCodeScanner
-        onRead={handleQRCodeScanned}
-        reactivate={true}
-        reactivateTimeout={3000}
-        showMarker={true}
-        topContent={
-          <Text style={[styles.headerText, { color: isDark ? '#fff' : '#000' }]}>
-            Scan the event QR code
-          </Text>
-        }
+    <View style={styles.container}>
+      <Camera
+        ref={cameraRef}
+        style={StyleSheet.absoluteFill}
+        device={device}
+        isActive
+        codeScanner={codeScanner} // Kích hoạt quét mã QR
       />
     </View>
   );
 };
 
+export default QRScanner;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    borderWidth: 2,
+    borderColor: 'green',
   },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 1,
-    padding: 10,
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: 'black',
   },
 });
-
-export default QRScanner;
