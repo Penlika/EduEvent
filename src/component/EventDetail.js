@@ -363,10 +363,18 @@ const EventDetail = ({route, navigation}) => {
             .collection('registeredEvents')
             .doc(eventId)
             .get();
+
+          // Add console.log for debugging
+          console.log('Registration check:', {
+            exists: registrationDoc.exists,
+            eventId: eventId,
+            userId: user.uid
+          });
           
           setIsRegistered(registrationDoc.exists);
         } catch (error) {
           console.error('Error checking registration:', error);
+          setIsRegistered(false); // Ensure false on error
         }
       }
     };
@@ -414,6 +422,9 @@ const EventDetail = ({route, navigation}) => {
     }
 
     try {
+      // Clear any previous registration check
+      setIsRegistered(false);
+      
       // Check if already registered
       const registrationDoc = await firestore()
         .collection('USER')
@@ -422,12 +433,20 @@ const EventDetail = ({route, navigation}) => {
         .doc(eventId)
         .get();
 
+      // Add console.log for debugging
+      console.log('Registration attempt:', {
+        exists: registrationDoc.exists,
+        eventId: eventId,
+        userId: user.uid
+      });
+
       if (registrationDoc.exists) {
         Alert.alert('Error', 'You have already registered for this event');
+        setIsRegistered(true);
         return;
       }
 
-      // If not registered, create new registration document
+      // If not registered, create new registration
       await firestore()
         .collection('USER')
         .doc(user.uid)
@@ -451,6 +470,7 @@ const EventDetail = ({route, navigation}) => {
     } catch (error) {
       console.error('Registration error:', error);
       Alert.alert('Error', 'Failed to register for the event');
+      setIsRegistered(false);
     }
   };
 
