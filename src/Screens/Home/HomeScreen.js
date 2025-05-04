@@ -54,7 +54,7 @@ const HomeScreen = () => {
     generalEvents: 'General Events',
     scientificConference: 'Scientific Conference',
     seminarTitle: 'SEMINAR ON BIOTECHNOLOGY AND SMART AGRICULTURE',
-    people: 'People',
+    people: 'Comments', // Đổi 'People' thành 'Comments' để phù hợp ngữ nghĩa
     topMentor: 'Top Mentor',
     mentorText: 'Mentor',
     faculty1: 'Viện CNTT & CDS',
@@ -132,12 +132,10 @@ const HomeScreen = () => {
 
       // Apply filters if needed
       if (selectedFilter === 'recent') {
-        // For recent events, sort by date and limit to recent ones
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         query = query.where('date', '>=', oneWeekAgo).orderBy('date', 'desc');
       } else if (selectedFilter === 'general') {
-        // For general events, filter by category
         query = query.where('category', '==', 'general');
       }
 
@@ -145,16 +143,46 @@ const HomeScreen = () => {
       const snapshot = await query.get();
 
       if (!snapshot.empty) {
-        const eventsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const eventsData = await Promise.all(
+          snapshot.docs.map(async doc => {
+            const eventData = doc.data();
+
+            // Lấy sub-collection CommentsAndRatings
+            const commentsSnapshot = await firestore()
+              .collection('event')
+              .doc(doc.id)
+              .collection('CommentsAndRatings')
+              .get();
+
+            // Đếm số lượng comment
+            const commentCount = commentsSnapshot.size;
+
+            // Tính trung bình rating
+            let totalRating = 0;
+            let ratingCount = 0;
+            commentsSnapshot.forEach(commentDoc => {
+              const comment = commentDoc.data();
+              if (comment.rating) {
+                totalRating += comment.rating;
+                ratingCount += 1;
+              }
+            });
+            const averageRating = ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : '0.0';
+
+            return {
+              id: doc.id,
+              ...eventData,
+              commentCount, // Thêm số lượng comment
+              averageRating, // Thêm trung bình rating
+            };
+          })
+        );
 
         setEvents(eventsData);
 
-        // Set popular events (sorted by attendee count or rating)
+        // Set popular events (sắp xếp theo commentCount thay vì peopleCount)
         const popular = [...eventsData]
-          .sort((a, b) => (b.peopleCount || 0) - (a.peopleCount || 0))
+          .sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
           .slice(0, 5); // Top 5 popular events
 
         setPopularEvents(popular);
@@ -534,7 +562,7 @@ const HomeScreen = () => {
                   borderRadius: wp(3),
                   justifyContent: 'flex-end',
                   overflow: 'hidden',
-                  marginBottom:20
+                  marginBottom: 20,
                 }}
                 onPress={() =>
                   navigation.navigate('EventDetail', {
@@ -557,7 +585,7 @@ const HomeScreen = () => {
                     fontSize: wp(3.5),
                     color: 'orange',
                     fontWeight: 'bold',
-                    paddingLeft:10
+                    paddingLeft: 10,
                   }}>
                   {getEventCategory(event)}
                 </Text>
@@ -566,13 +594,19 @@ const HomeScreen = () => {
                     fontSize: wp(4),
                     fontWeight: 'bold',
                     color: 'white',
-                    paddingLeft:10
+                    paddingLeft: 10,
                   }}>
                   {getEventTitle(event)}
                 </Text>
-                <Text style={{fontSize: wp(3.5), color: 'white' ,paddingLeft:10,paddingBottom:3}}>
-                  {event.peopleCount || 0} {getText('people')} | ⭐{' '}
-                  {event.rating || '4.0'}
+                <Text
+                  style={{
+                    fontSize: wp(3.5),
+                    color: 'white',
+                    paddingLeft: 10,
+                    paddingBottom: 3,
+                  }}>
+                  {event.commentCount || 0} {getText('people')} | ⭐{' '}
+                  {event.averageRating || '0.0'}
                 </Text>
               </TouchableOpacity>
             ))
