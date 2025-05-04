@@ -129,36 +129,34 @@ const HomeScreen = () => {
     setIsLoadingEvents(true);
     try {
       let query = firestore().collection('event');
-      
+
       // Apply filters if needed
       if (selectedFilter === 'recent') {
         // For recent events, sort by date and limit to recent ones
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        query = query
-          .where('date', '>=', oneWeekAgo)
-          .orderBy('date', 'desc');
+        query = query.where('date', '>=', oneWeekAgo).orderBy('date', 'desc');
       } else if (selectedFilter === 'general') {
         // For general events, filter by category
         query = query.where('category', '==', 'general');
       }
-      
+
       // Execute the query
       const snapshot = await query.get();
-      
+
       if (!snapshot.empty) {
         const eventsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-        
+
         setEvents(eventsData);
-        
+
         // Set popular events (sorted by attendee count or rating)
         const popular = [...eventsData]
           .sort((a, b) => (b.peopleCount || 0) - (a.peopleCount || 0))
           .slice(0, 5); // Top 5 popular events
-        
+
         setPopularEvents(popular);
       } else {
         setEvents([]);
@@ -285,27 +283,37 @@ const HomeScreen = () => {
   };
 
   // Helper function to get event title with appropriate language
-  const getEventTitle = (event) => {
+  const getEventTitle = event => {
     if (!event) return '';
-    
+
     // Check if the event has a translated title for the current language
-    if (currentLang !== 'en' && event.translations && event.translations[currentLang] && event.translations[currentLang].title) {
+    if (
+      currentLang !== 'en' &&
+      event.translations &&
+      event.translations[currentLang] &&
+      event.translations[currentLang].title
+    ) {
       return event.translations[currentLang].title;
     }
-    
+
     // Fallback to default title
     return event.title || '';
   };
 
   // Helper function to get event category with appropriate language
-  const getEventCategory = (event) => {
+  const getEventCategory = event => {
     if (!event) return '';
-    
+
     // Check if the event has a translated category for the current language
-    if (currentLang !== 'en' && event.translations && event.translations[currentLang] && event.translations[currentLang].category) {
+    if (
+      currentLang !== 'en' &&
+      event.translations &&
+      event.translations[currentLang] &&
+      event.translations[currentLang].category
+    ) {
       return event.translations[currentLang].category;
     }
-    
+
     // Fallback to default category
     return event.category || getText('scientificConference'); // Default fallback text
   };
@@ -498,7 +506,12 @@ const HomeScreen = () => {
 
       {/* Event Cards */}
       {isLoadingEvents ? (
-        <View style={{height: hp(20), justifyContent: 'center', alignItems: 'center'}}>
+        <View
+          style={{
+            height: hp(20),
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
           <ActivityIndicator size="large" color="#007BFF" />
           <Text style={{marginTop: 10, color: isDark ? '#fff' : '#000'}}>
             {getText('loadingEvents')}
@@ -514,23 +527,23 @@ const HomeScreen = () => {
               <TouchableOpacity
                 key={index}
                 style={{
-                  width: wp(50),
+                  width: wp(60),
                   height: hp(20),
                   backgroundColor: isDark ? '#111' : '#000',
                   marginRight: wp(3),
                   borderRadius: wp(3),
-                  padding: wp(3),
                   justifyContent: 'flex-end',
                   overflow: 'hidden',
+                  marginBottom:20
                 }}
                 onPress={() =>
                   navigation.navigate('EventDetail', {
                     eventId: event.id,
                   })
                 }>
-                {event.imageUrl && (
+                {event.images && event.images.length > 0 && (
                   <Image
-                    source={{ uri: event.imageUrl }}
+                    source={{uri: event.images[0]}}
                     style={{
                       position: 'absolute',
                       width: '100%',
@@ -540,7 +553,12 @@ const HomeScreen = () => {
                   />
                 )}
                 <Text
-                  style={{fontSize: wp(3.5), color: 'orange', fontWeight: 'bold'}}>
+                  style={{
+                    fontSize: wp(3.5),
+                    color: 'orange',
+                    fontWeight: 'bold',
+                    paddingLeft:10
+                  }}>
                   {getEventCategory(event)}
                 </Text>
                 <Text
@@ -548,21 +566,24 @@ const HomeScreen = () => {
                     fontSize: wp(4),
                     fontWeight: 'bold',
                     color: 'white',
+                    paddingLeft:10
                   }}>
                   {getEventTitle(event)}
                 </Text>
-                <Text style={{fontSize: wp(3.5), color: 'white'}}>
-                  {event.peopleCount || 0} {getText('people')} | ⭐ {event.rating || '4.0'}
+                <Text style={{fontSize: wp(3.5), color: 'white' ,paddingLeft:10,paddingBottom:3}}>
+                  {event.peopleCount || 0} {getText('people')} | ⭐{' '}
+                  {event.rating || '4.0'}
                 </Text>
               </TouchableOpacity>
             ))
           ) : (
-            <View style={{
-              width: wp(90),
-              height: hp(20),
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
+            <View
+              style={{
+                width: wp(90),
+                height: hp(20),
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
               <Text style={{color: isDark ? '#fff' : '#000'}}>
                 {getText('noEventsFound')}
               </Text>
@@ -570,45 +591,6 @@ const HomeScreen = () => {
           )}
         </ScrollView>
       )}
-
-      {/* Top Mentors */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: hp(3),
-        }}>
-        <Text
-          style={{
-            fontSize: wp(5),
-            fontWeight: 'bold',
-            color: isDark ? '#fff' : '#000',
-          }}>
-          {getText('topMentor')}
-        </Text>
-        <Text style={{fontSize: wp(4), color: '#007BFF'}}>
-          {getText('seeAll')}
-        </Text>
-      </View>
-      <View style={{flexDirection: 'row', marginTop: hp(2)}}>
-        {[1, 2, 3, 4].map((_, index) => (
-          <View
-            key={index}
-            style={{
-              width: wp(20),
-              height: wp(20),
-              backgroundColor: isDark ? '#222' : 'black',
-              borderRadius: wp(10),
-              marginRight: wp(2),
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Text style={{color: 'white'}}>
-              {getText('mentorText')} {index + 1}
-            </Text>
-          </View>
-        ))}
-      </View>
     </ScrollView>
   );
 };

@@ -1394,8 +1394,6 @@ const styles = StyleSheet.create({
   registerBtn: {
     position: 'absolute',
     bottom: '4%',
-    right: '20%',
-    left: '20%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1407,6 +1405,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     shadowOffset: {width: 0, height: 2},
+    width:300,
   },
   registerBtnText: {
     color: 'white',
