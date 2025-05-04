@@ -326,6 +326,24 @@ const EventDetail = ({route, navigation}) => {
     },
   });
 
+  // First add this helper function to determine time slot and periods
+  const getTimeSlotDetails = (eventTime) => {
+    const hours = eventTime.getHours();
+    if (hours < 12) {
+      return {
+        timeSlot: 'morning',
+        startPeriod: 1,
+        endPeriod: 5
+      };
+    } else {
+      return {
+        timeSlot: 'afternoon', 
+        startPeriod: 6,
+        endPeriod: 10
+      };
+    }
+  };
+
   useEffect(() => {
     const fetchEventData = async () => {
       try {
@@ -438,38 +456,74 @@ const EventDetail = ({route, navigation}) => {
         return;
       }
 
-      await firestore()
+      const eventTime = eventData.time.toDate();
+      const { startPeriod, endPeriod } = getTimeSlotDetails(eventTime);
+
+      // Create the schedule entry
+      const scheduleEntry = {
+        ten_mon: eventData.title,
+        loai: eventData.category,
+        thoi_gian: eventData.time,
+        ten_giang_vien: eventData.organizer?.name || 'N/A',
+        dia_diem: eventData.location || 'N/A',
+        tiet_bat_dau: startPeriod,
+        so_tiet: endPeriod - startPeriod + 1,
+        thu_kieu_so: eventTime.getDay() + 1, // Convert JS day (0-6) to schedule day (1-7)
+        ngay_hoc: eventData.time,
+        ma_nhom: 'EVENT',
+        type: 'event'
+      };
+
+      // Batch write to both collections
+      const batch = firestore().batch();
+
+      // Add to registeredEvents
+      const registeredEventRef = firestore()
         .collection('USER')
         .doc(userId)
         .collection('registeredEvents')
-        .doc(eventId)
-        .set({
-          eventId: eventId,
-          title: eventData.title || '',
-          location: eventData.location || '',
-          time: eventData.time || '',
-          category: eventData.category || '',
-          registeredAt: firestore.Timestamp.now(),
-          completed: false,
-          image: eventData.image || '',
-          organizerId: eventData.organizerId || ''
-        });
+        .doc(eventId);
+
+      batch.set(registeredEventRef, {
+        eventId: eventId,
+        title: eventData.title || '',
+        location: eventData.location || '',
+        time: eventData.time || '',
+        category: eventData.category || '',
+        registeredAt: firestore.Timestamp.now(),
+        completed: false,
+        image: eventData.image || '',
+        organizerId: eventData.organizerId || ''
+      });
+
+      // Add to schedule
+      const scheduleRef = firestore()
+        .collection('USER')
+        .doc(userId)
+        .collection('schedule')
+        .doc(eventId);
+
+      batch.set(scheduleRef, scheduleEntry);
+
+      // Commit the batch
+      await batch.commit();
 
       setIsRegistered(true);
       Alert.alert('Success', 'Successfully registered for the event');
-      //   Gửi vào Firestore: thông báo đăng ký sự kiện thành công
+
+      // Add notification
       await firestore()
-      .collection('USER')
-      .doc(userId)
-      .collection('notifications')
-      .add({
-        title: 'Đăng ký sự kiện thành công',
-        body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
-        type: 'event_joined',
-        isRead: false,
-        timestamp: firestore.FieldValue.serverTimestamp(),
-      });
-      // qua event screen
+        .collection('USER')
+        .doc(userId)
+        .collection('notifications')
+        .add({
+          title: 'Đăng ký sự kiện thành công',
+          body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
+          type: 'event_joined',
+          isRead: false,
+          timestamp: firestore.FieldValue.serverTimestamp(),
+        });
+
       navigation.navigate('EventScreen');
     } catch (error) {
       console.error('Registration error:', error);

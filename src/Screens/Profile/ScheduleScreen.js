@@ -14,6 +14,9 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Picker } from '@react-native-picker/picker';
+import firebase from '@react-native-firebase/app';
+import auth from '@react-native-firebase/auth';
+import '@react-native-firebase/firestore';
 
 const ScheduleScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -29,6 +32,7 @@ const ScheduleScreen = () => {
   const [daysWithClasses, setDaysWithClasses] = useState({});
   const [semesterModalVisible, setSemesterModalVisible] = useState(false);
   const [semesters, setSemesters] = useState([]);
+  const [firebaseEvents, setFirebaseEvents] = useState([]);
   
   // Vietnamese day name conversion
   const dayNames = {
@@ -112,13 +116,55 @@ const ScheduleScreen = () => {
     const weeks = {};
     const daysHavingClasses = {};
     
+    // Find the currently selected week's date range
+    const selectedWeekData = filteredData.find(item => item.tuan_hoc_ky === selectedWeek);
+    const weekInfo = selectedWeekData?.thong_tin_tuan || '';
+    const weekDate = weekInfo.match(/\[từ ngày (.*?) đến ngày (.*?)\]/);
+    
+    // Parse dates properly for comparison
+    const weekStartDate = weekDate ? new Date(weekDate[1].split('/').reverse().join('-')) : null;
+    const weekEndDate = weekDate ? new Date(weekDate[2].split('/').reverse().join('-')) : null;
+    
     filteredData.forEach(item => {
       const weekInfo = item?.thong_tin_tuan || '';
       const weekDate = weekInfo.match(/\[từ ngày (.*?) đến ngày (.*?)\]/);
       const startDate = weekDate ? weekDate[1] : '';
       const endDate = weekDate ? weekDate[2] : '';
       
-      const classes = item?.ds_thoi_khoa_bieu || [];
+      const classes = [...(item?.ds_thoi_khoa_bieu || [])];
+      
+      // Add Firebase events that fall within this week
+      if (weekStartDate && weekEndDate) {
+        const events = firebaseEvents.filter(event => {
+          const eventDate = new Date(event.ngay_hoc);
+          eventDate.setHours(0, 0, 0, 0);
+          weekStartDate.setHours(0, 0, 0, 0);
+          weekEndDate.setHours(0, 0, 0, 0);
+          
+          return eventDate >= weekStartDate && eventDate <= weekEndDate;
+        });
+        
+        // Add valid events to classes array
+        events.forEach(event => {
+          if (event.tiet_bat_dau && event.so_tiet) {
+            // Calculate day number (1-7) from the event date
+            const eventDate = new Date(event.ngay_hoc);
+            // Get day of week (0-6, where 0 is Sunday)
+            let dayNumber = eventDate.getDay();
+            // Convert to our format (1-7, where 1 is Sunday)
+            dayNumber = dayNumber === 0 ? 1 : dayNumber + 1;
+
+            classes.push({
+              ...event,
+              type: 'event',
+              ma_phong: event.dia_diem,
+              ten_giang_vien: event.ten_giang_vien || 'N/A',
+              ten_mon: event.ten_mon || 'Untitled Event',
+              thu_kieu_so: dayNumber // Use calculated day number instead of stored one
+            });
+          }
+        });
+      }
       
       // Skip weeks with no classes
       if (classes.length === 0) return;
@@ -268,6 +314,69 @@ const ScheduleScreen = () => {
     }
   };
 
+  // Replace the existing fetchFirebaseEvents function with this:
+  const fetchFirebaseEvents = async () => {
+    try {
+      const currentUser = auth().currentUser;
+      if (!currentUser) return;
+
+      const userEventsRef = firebase
+        .firestore()
+        .collection('USER')
+        .doc(currentUser.uid)
+        .collection('schedule');
+
+      // Create real-time listener
+      const unsubscribe = userEventsRef.onSnapshot(
+        (snapshot) => {
+          const events = [];
+          snapshot.forEach(doc => {
+            const eventData = doc.data();
+            // Convert Firestore Timestamp to Date
+            const eventDate = eventData.ngay_hoc?.toDate() || new Date(eventData.ngay_hoc);
+            
+            events.push({
+              ...eventData,
+              id: doc.id,
+              ngay_hoc: eventDate,
+              type: 'event'
+            });
+          });
+          setFirebaseEvents(events);
+        },
+        (error) => {
+          console.error('Firestore real-time sync error:', error);
+          Alert.alert('Error', 'Failed to sync personal events');
+        }
+      );
+
+      // Store unsubscribe function for cleanup
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error setting up Firebase listener:', error);
+      Alert.alert('Error', 'Failed to initialize event sync');
+    }
+  };
+
+  // Add this useEffect to handle the real-time listener lifecycle
+  useEffect(() => {
+    let unsubscribe;
+    
+    if (scheduleData.length > 0) {
+      // Set up Firebase real-time listener
+      fetchFirebaseEvents().then(unsubscribeFunc => {
+        unsubscribe = unsubscribeFunc;
+      });
+    }
+
+    // Cleanup function to remove listener when component unmounts
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [scheduleData]); // Only re-run if scheduleData changes
+
   // Update the formatClassTime function to handle 10 periods
   const formatClassTime = (startPeriod, totalPeriods) => {
     // Define period time slots with breaks
@@ -328,11 +437,14 @@ const ScheduleScreen = () => {
     </View>
   );
 
-  // Update renderClassItem component
+  // Update renderClassItem component to handle events
   const renderClassItem = ({ item }) => {
-    const PERIOD_HEIGHT = 45; // Match the new period height
+    const PERIOD_HEIGHT = 45;
     const topPosition = (item.tiet_bat_dau - 1) * PERIOD_HEIGHT;
     const height = item.so_tiet * PERIOD_HEIGHT;
+    
+    // Check if the item is an event
+    const isEvent = item.type === 'event';
     
     return (
       <View style={[
@@ -345,17 +457,37 @@ const ScheduleScreen = () => {
           right: 0,
           marginLeft: 8,
           marginRight: 8
-        }
+        },
+        isEvent && styles.eventCard // Add special styling for events
       ]}>
-        <Text style={styles.subject}>{item.ten_mon}</Text>
+        <Text style={[styles.subject, isEvent && styles.eventSubject]}>
+          {isEvent ? '🎉 ' : ''}{item.ten_mon}
+        </Text>
         {item.ma_nhom && (
-          <Text style={styles.groupText}>Nhóm: {item.ma_nhom}</Text>
+          <Text style={styles.groupText}>
+            {isEvent ? 'Event ID: ' : 'Nhóm: '}{item.ma_nhom}
+          </Text>
         )}
         <View style={styles.classDetails}>
-          <Text style={styles.detailText}>Thời gian: {dayNames[item.thu_kieu_so] || `Thứ ${item.thu}`}</Text>
-          <Text style={styles.detailText}>Địa điểm: {item.ma_phong}</Text>
-          <Text style={styles.detailText}>GV: {item.ten_giang_vien}</Text>
-          <Text style={styles.detailText}>Ngày học: {new Date(item.ngay_hoc).toLocaleDateString('vi-VN')}</Text>
+          <Text style={styles.detailText}>
+            Thời gian: {dayNames[item.thu_kieu_so] || `Thứ ${item.thu}`}
+          </Text>
+          {isEvent ? (
+            <Text style={styles.detailText}>
+              Địa điểm: {item.dia_diem || 'Không có'}
+            </Text>
+          ) : (
+            <Text style={styles.detailText}>Địa điểm: {item.ma_phong}</Text>
+          )}
+          <Text style={styles.detailText}>
+            {isEvent ? 'Người tổ chức: ' : 'GV: '}{item.ten_giang_vien}
+          </Text>
+          <Text style={styles.detailText}>
+            Ngày: {new Date(item.ngay_hoc).toLocaleDateString('vi-VN')}
+          </Text>
+          {isEvent && item.loai && (
+            <Text style={styles.detailText}>Loại: {item.loai}</Text>
+          )}
         </View>
       </View>
     );
@@ -405,55 +537,6 @@ const ScheduleScreen = () => {
       </Text>
     </TouchableOpacity>
   );
-
-  // Add or update these styles
-  const additionalStyles = {
-    timeSidebar: {
-      width: 60,
-      backgroundColor: '#0066CC', // Blue background like the example
-    },
-    periodContainer: {
-      height: 45, // Reduced from 60px to 45px
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderBottomWidth: 1,
-      borderBottomColor: '#FFFFFF',
-    },
-    periodText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    card: {
-      backgroundColor: '#FFFFFF',
-      borderRadius: 8,
-      padding: 12,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    subject: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: '#0066CC',
-      marginBottom: 4,
-    },
-    groupText: {
-      fontSize: 14,
-      color: '#666666',
-      marginBottom: 8,
-    },
-    classDetails: {
-      marginTop: 8,
-    },
-    detailText: {
-      fontSize: 14,
-      color: '#444444',
-      marginBottom: 4,
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -559,9 +642,13 @@ const ScheduleScreen = () => {
             <View style={styles.scheduleContainer}>
               <TimeSidebar />
               <View style={styles.scheduleContent}>
-                {groupedSchedule.map(section => 
-                  section.data.map(item => renderClassItem({ item }))
-                )}
+                {groupedSchedule.map((section, sectionIndex) => (
+                  section.data.map((item, itemIndex) => (
+                    <React.Fragment key={`${sectionIndex}-${itemIndex}-${item.id || itemIndex}`}>
+                      {renderClassItem({ item })}
+                    </React.Fragment>
+                  ))
+                ))}
               </View>
             </View>
           ) : (
@@ -569,10 +656,6 @@ const ScheduleScreen = () => {
               <Text style={styles.emptyText}>Không có lịch học</Text>
             </View>
           )}
-          
-          <TouchableOpacity style={styles.refreshButton} onPress={() => fetchSchedule(semesterCode)}>
-            <Text style={styles.refreshButtonText}>🔄 Làm mới</Text>
-          </TouchableOpacity>
         </View>
       )}
       
@@ -868,6 +951,14 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 450, // Keep this height fixed
     backgroundColor: '#FFFFFF' // Add background color to hide excess space
+  },
+  eventCard: {
+    backgroundColor: '#FEF3C7', // Light yellow background for events
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B', // Orange accent
+  },
+  eventSubject: {
+    color: '#D97706', // Darker orange for event title
   }
 });
 
