@@ -199,19 +199,127 @@ const QRScanner = ({route, navigation}) => {
           }
         }
       } catch (error) {
-        console.error('Yêu cầu quyền thất bại:', error);
-        Alert.alert('Lỗi', 'Không thể yêu cầu quyền', [
-          {text: 'OK', onPress: () => setIsProcessing(false)},
-        ]);
+        console.error('Lỗi lấy dữ liệu sự kiện: ', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    requestPermissions();
-  }, []);
+    fetchEventData();
+  }, [eventId]);
 
-  if (!device) {
-    return <View style={styles.loadingContainer} />;
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (userId && eventId) {
+        try {
+          const registrationDoc = await firestore()
+            .collection('USER')
+            .doc(userId)
+            .collection('registeredEvents')
+            .doc(eventId)
+            .get();
+          
+          setIsRegistered(registrationDoc.exists);
+        } catch (error) {
+          console.error('Error checking registration:', error);
+        }
+      }
+    };
+
+    checkRegistration();
+  }, [userId, eventId]);
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  if (isTranslating) {
+    return (
+      <View style={dynamicStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000'} />
+        <Text style={{color: isDark ? '#FFFFFF' : '#000'}}>
+          {getText('loading')}
+        </Text>
+      </View>
+    );
   }
+
+  if (loading) {
+    return (
+      <View style={dynamicStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000'} />
+      </View>
+    );
+  }
+
+  if (!eventData) {
+    return (
+      <View style={dynamicStyles.loadingContainer}>
+        <Text style={{color: isDark ? '#FFFFFF' : '#000'}}>
+          {getText('noEventData')}
+        </Text>
+      </View>
+    );
+  }
+  // gọi chức năng đăng ký sụ kiện để thêm sự kiẹn vào scheduleschedule
+  const onPressRegister = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'Please login to register for events');
+      return;
+    }
+
+    try {
+      // Check if already registered
+      const registrationDoc = await firestore()
+        .collection('USER')
+        .doc(userId)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .get();
+
+      if (!registrationDoc.exists) {
+        Alert.alert('Error', 'You have already registered for this event');
+        return;
+      }
+
+      await firestore()
+        .collection('USER')
+        .doc(userId)
+        .collection('registeredEvents')
+        .doc(eventId)
+        .set({
+          eventId: eventId,
+          title: eventData.title || '',
+          location: eventData.location || '',
+          time: eventData.time || '',
+          category: eventData.category || '',
+          registeredAt: firestore.Timestamp.now(),
+          completed: false,
+          image: eventData.image || '',
+          organizerId: eventData.organizerId || ''
+        });
+
+      setIsRegistered(true);
+      Alert.alert('Success', 'Successfully registered for the event');
+      //   Gửi vào Firestore: thông báo đăng ký sự kiện thành công
+      await firestore()
+      .collection('USER')
+      .doc(userId)
+      .collection('notifications')
+      .add({
+        title: 'Đăng ký sự kiện thành công',
+        body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
+        type: 'event_joined',
+        isRead: false,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
+      // qua event screen
+      navigation.navigate('EventScreen');
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Error', 'Failed to register for the event');
+    }
+  };
 
   return (
     <View style={styles.container}>
