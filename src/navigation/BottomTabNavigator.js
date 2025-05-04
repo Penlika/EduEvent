@@ -12,6 +12,7 @@ import InboxScreen from '../Screens/Home/InboxScreen';
 import Schedule from '../Screens/Schedules/Schedule';
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
 import WeekSchedule from '../Screens/Profile/ScheduleScreen';
+import CompletedEventsScreen from '../Screens/Profile/CompletedEventsScreen';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,6 +70,7 @@ const BottomTabNavigator = () => {
       <Drawer.Screen name="Account" component={ProfileScreen} />
       <Drawer.Screen name="Setting" component={SettingScreen} />
       <Drawer.Screen name="Schedule" component={WeekSchedule} />
+      <Drawer.Screen name="Evaluate training results" component={CompletedEventsScreen} />
     </Drawer.Navigator>
   );
 };
