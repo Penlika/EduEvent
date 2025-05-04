@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import auth from '@react-native-firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import moment from 'moment';
-import { useTheme } from './ThemeContext';
+import {useTheme} from './ThemeContext';
 import axios from 'axios';
 import {
   Camera,
@@ -43,8 +43,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; // Khoảng cách tính bằng mét
 };
 
-const EventDetail = ({ route, navigation }) => {
-  const { eventId } = route.params;
+const EventDetail = ({route, navigation}) => {
+  const {eventId} = route.params;
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
@@ -61,7 +61,7 @@ const EventDetail = ({ route, navigation }) => {
   const device = useCameraDevice('back');
 
   // Get theme from context
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const isDark = theme === 'dark';
 
   // Google Translate API key
@@ -90,7 +90,8 @@ const EventDetail = ({ route, navigation }) => {
     outOfRange: 'You are not within 50m radius',
     locationError: 'Unable to retrieve current location',
     qrError: 'Unable to process QR code',
-    permissionDenied: 'You need to grant location permission to verify the event',
+    permissionDenied:
+      'You need to grant location permission to verify the event',
     cameraDenied: 'You need to grant camera permission to scan QR code',
     success: 'QR code matches the event and you are within 50m radius',
     updateError: 'Unable to update event status',
@@ -98,7 +99,7 @@ const EventDetail = ({ route, navigation }) => {
   };
 
   // Storage for translated content
-  const [translations, setTranslations] = useState({ ...originalContent });
+  const [translations, setTranslations] = useState({...originalContent});
 
   // Setup real-time listener for language changes
   useEffect(() => {
@@ -114,7 +115,7 @@ const EventDetail = ({ route, navigation }) => {
             if (userData.language && userData.language !== currentLang) {
               setCurrentLang(userData.language);
               if (userData.language === 'en') {
-                setTranslations({ ...originalContent });
+                setTranslations({...originalContent});
               } else {
                 translateAllContent(userData.language);
               }
@@ -142,7 +143,7 @@ const EventDetail = ({ route, navigation }) => {
           if (userLang !== 'en') {
             translateAllContent(userLang);
           } else {
-            setTranslations({ ...originalContent });
+            setTranslations({...originalContent});
           }
         }
       }
@@ -188,7 +189,7 @@ const EventDetail = ({ route, navigation }) => {
   // Function to translate all content at once
   const translateAllContent = async targetLang => {
     if (targetLang === 'en') {
-      setTranslations({ ...originalContent });
+      setTranslations({...originalContent});
       return;
     }
 
@@ -206,7 +207,7 @@ const EventDetail = ({ route, navigation }) => {
       setTranslations(newTranslations);
     } catch (error) {
       console.error('Translation batch error:', error);
-      setTranslations({ ...originalContent });
+      setTranslations({...originalContent});
     } finally {
       setIsTranslating(false);
     }
@@ -298,7 +299,7 @@ const EventDetail = ({ route, navigation }) => {
         const cameraPermission = await Camera.requestCameraPermission();
         if (cameraPermission === 'denied') {
           Alert.alert('Lỗi', getText('cameraDenied'), [
-            { text: 'OK', onPress: () => setIsScanning(false) },
+            {text: 'OK', onPress: () => setIsScanning(false)},
           ]);
           return;
         }
@@ -310,7 +311,8 @@ const EventDetail = ({ route, navigation }) => {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Quyền Truy Cập Vị Trí',
-              message: 'Ứng dụng cần quyền truy cập vị trí để xác minh bạn đang ở gần sự kiện',
+              message:
+                'Ứng dụng cần quyền truy cập vị trí để xác minh bạn đang ở gần sự kiện',
               buttonPositive: 'Đồng ý',
               buttonNegative: 'Hủy',
               buttonNeutral: 'Hỏi Sau',
@@ -318,7 +320,7 @@ const EventDetail = ({ route, navigation }) => {
           );
           if (locationPermission !== PermissionsAndroid.RESULTS.GRANTED) {
             Alert.alert('Lỗi', getText('permissionDenied'), [
-              { text: 'OK', onPress: () => setIsScanning(false) },
+              {text: 'OK', onPress: () => setIsScanning(false)},
             ]);
           }
         }
@@ -334,7 +336,7 @@ const EventDetail = ({ route, navigation }) => {
 
   // QR code scanner
   const codeScanner = useCodeScanner({
-    codeTypes: ['qr', 'ean-13'],
+    codeTypes: ['qr'],
     onCodeScanned: codes => {
       if (codes.length > 0 && !isProcessing) {
         setIsProcessing(true);
@@ -343,84 +345,68 @@ const EventDetail = ({ route, navigation }) => {
 
         try {
           const parts = qrValue.split(':');
-          if (parts.length !== 3) {
-            Alert.alert('Lỗi', getText('invalidQR'), [
-              { text: 'OK', onPress: () => setIsProcessing(false) },
-            ]);
-            return;
-          }
-
           const [scannedEventId, eventLat, eventLon] = parts;
-          if (!eventId) {
+
+          // Kiểm tra eventId khớp trước tiên
+          if (scannedEventId === eventId) {
+            const lat2 = parseFloat(eventLat);
+            const lon2 = parseFloat(eventLon);
+
+            Geolocation.getCurrentPosition(
+              position => {
+                const { latitude, longitude } = position.coords;
+                const distance = calculateDistance(latitude, longitude, lat2, lon2);
+
+                if (distance <= 50) {
+                  const eventRef = firestore()
+                    .collection('USER')
+                    .doc(userId)
+                    .collection('registeredEvents')
+                    .doc(eventId);
+
+                  eventRef
+                    .update({ completed: true })
+                    .then(() => {
+                      Alert.alert('Thành Công', getText('success'), [
+                        { text: 'OK', onPress: () => setIsScanning(false) },
+                      ]);
+                    })
+                    .catch(() => {
+                      Alert.alert('Lỗi', getText('updateError'), [
+                        { text: 'OK', onPress: () => setIsProcessing(false) },
+                      ]);
+                    });
+                } else {
+                  Alert.alert('Lỗi', getText('outOfRange'), [
+                    { text: 'OK', onPress: () => setIsProcessing(false) },
+                  ]);
+                }
+              },
+              error => {
+                console.error('Lỗi lấy vị trí:', error);
+                Alert.alert('Lỗi', getText('locationError'), [
+                  { text: 'OK', onPress: () => setIsProcessing(false) },
+                  { text: 'Mở Cài Đặt', onPress: () => Linking.openSettings() },
+                ]);
+              },
+              { timeout: 10000, maximumAge: 10000 },
+            );
+          } else if (!eventId) {
             Alert.alert('Lỗi', getText('noEventId'), [
               { text: 'OK', onPress: () => setIsProcessing(false) },
             ]);
-            return;
-          }
-
-          if (scannedEventId !== eventId) {
-            Alert.alert('Lỗi', `${getText('qrMismatch')} ${eventId}`, [
+          } else {
+            Alert.alert('Lỗi', getText('qrMismatch'), [
               { text: 'OK', onPress: () => setIsProcessing(false) },
             ]);
-            return;
           }
-
-          Geolocation.getCurrentPosition(
-            position => {
-              const { latitude, longitude } = position.coords;
-              const lat2 = parseFloat(eventLat);
-              const lon2 = parseFloat(eventLon);
-
-              if (isNaN(lat2) || isNaN(lon2)) {
-                Alert.alert('Lỗi', getText('invalidCoords'), [
-                  { text: 'OK', onPress: () => setIsProcessing(false) },
-                ]);
-                return;
-              }
-
-              const distance = calculateDistance(latitude, longitude, lat2, lon2);
-
-              if (distance <= 50) {
-                const eventRef = firestore()
-                  .collection('USER')
-                  .doc(userId)
-                  .collection('registeredEvents')
-                  .doc(eventId);
-
-                eventRef
-                  .update({ completed: true })
-                  .then(() => {
-                    Alert.alert('Thành Công', getText('success'), [
-                      { text: 'OK', onPress: () => setIsScanning(false) },
-                    ]);
-                  })
-                  .catch(error => {
-                    console.error('Lỗi cập nhật:', error);
-                    Alert.alert('Lỗi', getText('updateError'), [
-                      { text: 'OK', onPress: () => setIsProcessing(false) },
-                    ]);
-                  });
-              } else {
-                Alert.alert('Lỗi', getText('outOfRange'), [
-                  { text: 'OK', onPress: () => setIsProcessing(false) },
-                ]);
-              }
-            },
-            error => {
-              console.error('Lỗi lấy vị trí:', error);
-              Alert.alert('Lỗi', getText('locationError'), [
-                { text: 'OK', onPress: () => setIsProcessing(false) },
-              ]);
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-          );
         } catch (error) {
           console.error('Lỗi xử lý mã QR:', error);
           Alert.alert('Lỗi', getText('qrError'), [
             { text: 'OK', onPress: () => setIsProcessing(false) },
           ]);
         } finally {
-          setTimeout(() => setIsProcessing(false), 2000);
+          setTimeout(() => setIsProcessing(false), 1000);
         }
       }
     },
@@ -448,7 +434,7 @@ const EventDetail = ({ route, navigation }) => {
       }
 
       const eventTime = eventData.time.toDate();
-      const { startPeriod, endPeriod } = getTimeSlotDetails(eventTime);
+      const {startPeriod, endPeriod} = getTimeSlotDetails(eventTime);
 
       const scheduleEntry = {
         ten_mon: eventData.title,
@@ -541,7 +527,7 @@ const EventDetail = ({ route, navigation }) => {
       padding: 16,
       elevation: 5,
       shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: isDark ? 0.8 : 0.3,
       shadowRadius: 4,
     },
@@ -587,7 +573,7 @@ const EventDetail = ({ route, navigation }) => {
       padding: 16,
       elevation: 5,
       shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: isDark ? 0.8 : 0.3,
       shadowRadius: 4,
     },
@@ -614,7 +600,7 @@ const EventDetail = ({ route, navigation }) => {
       margin: 16,
       elevation: 3,
       shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: isDark ? 0.8 : 0.3,
       shadowRadius: 3,
     },
@@ -724,18 +710,18 @@ const EventDetail = ({ route, navigation }) => {
       <ScrollView contentContainerStyle={styles.contentContainer}>
         {eventData.image ? (
           <ImageBackground
-            source={{ uri: eventData.image }}
-            style={{ ...styles.headerImg, marginTop: 30 }}
+            source={{uri: eventData.image}}
+            style={{...styles.headerImg, marginTop: 30}}
             resizeMode="cover">
             <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
               <Icon name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
           </ImageBackground>
         ) : (
-          <View style={[styles.headerImg, { backgroundColor: 'black' }]}>
+          <View style={[styles.headerImg, {backgroundColor: 'black'}]}>
             <TouchableOpacity
               onPress={handleBack}
-              style={{ ...styles.backBtn, marginTop: 30 }}>
+              style={{...styles.backBtn, marginTop: 30}}>
               <Icon name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -791,7 +777,7 @@ const EventDetail = ({ route, navigation }) => {
 
           {/* Quantity */}
           <Text
-            style={{ ...styles.quantity, color: isDark ? '#64B5F6' : '#1E88E5' }}>
+            style={{...styles.quantity, color: isDark ? '#64B5F6' : '#1E88E5'}}>
             {eventData.quantity
               ? `${eventData.quantity}/${eventData.quantitymax}`
               : '0/500'}
@@ -846,10 +832,10 @@ const EventDetail = ({ route, navigation }) => {
         <Text style={dynamicStyles.sectionTitle}>{getText('organizer')}</Text>
         <View style={dynamicStyles.instructorContainer}>
           <Image
-            source={{ uri: eventData.organizer?.avatar }}
+            source={{uri: eventData.organizer?.avatar}}
             style={styles.instructorAvatar}
           />
-          <View style={{ marginLeft: 10 }}>
+          <View style={{marginLeft: 10}}>
             <Text style={dynamicStyles.instructorName}>
               {eventData.organizer?.name || 'Robert jr'}
             </Text>
@@ -864,7 +850,7 @@ const EventDetail = ({ route, navigation }) => {
                 organizerId: eventData.organizerId,
               })
             }
-            style={{ marginLeft: 'auto' }}>
+            style={{marginLeft: 'auto'}}>
             <Icon
               name="chat-processing-outline"
               size={30}
@@ -904,11 +890,11 @@ const EventDetail = ({ route, navigation }) => {
           <View style={dynamicStyles.reviewItem} key={index}>
             <View style={styles.reviewAvatarWrapper}>
               <Image
-                source={{ uri: review.avatar }}
+                source={{uri: review.avatar}}
                 style={styles.reviewAvatar}
               />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{flex: 1}}>
               <Text style={dynamicStyles.reviewName}>{review.name}</Text>
               <View style={styles.reviewRating}>
                 <Icon name="star" size={14} color="#f2c94c" />
@@ -948,7 +934,7 @@ const EventDetail = ({ route, navigation }) => {
       <TouchableOpacity
         style={[
           styles.registerBtn,
-          isRegistered && { backgroundColor: '#28a745' },
+          isRegistered && {backgroundColor: '#28a745'},
         ]}
         onPress={() => {
           if (isRegistered) {
@@ -971,7 +957,7 @@ const EventDetail = ({ route, navigation }) => {
             shadowColor: '#000',
             shadowOpacity: 0.3,
             shadowRadius: 5,
-            shadowOffset: { width: 0, height: 2 },
+            shadowOffset: {width: 0, height: 2},
           }}>
           <Icon
             name={isRegistered ? 'qrcode-scan' : 'arrow-right'}
@@ -1098,7 +1084,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
   },
   registerBtnText: {
     color: 'white',
