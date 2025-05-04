@@ -465,7 +465,7 @@ const ScheduleScreen = () => {
         </Text>
         {item.ma_nhom && (
           <Text style={styles.groupText}>
-            {isEvent ? 'Event ID: ' : 'Nhóm: '}{item.ma_nhom}
+            {isEvent ? 'Field: ' : 'Nhóm: '}{item.ma_nhom}
           </Text>
         )}
         <View style={styles.classDetails}>
@@ -485,9 +485,6 @@ const ScheduleScreen = () => {
           <Text style={styles.detailText}>
             Ngày: {new Date(item.ngay_hoc).toLocaleDateString('vi-VN')}
           </Text>
-          {isEvent && item.loai && (
-            <Text style={styles.detailText}>Loại: {item.loai}</Text>
-          )}
         </View>
       </View>
     );
@@ -642,13 +639,13 @@ const ScheduleScreen = () => {
             <View style={styles.scheduleContainer}>
               <TimeSidebar />
               <View style={styles.scheduleContent}>
-                {groupedSchedule.map((section, sectionIndex) => (
+                {groupedSchedule.map((section, sectionIndex) => 
                   section.data.map((item, itemIndex) => (
                     <React.Fragment key={`${sectionIndex}-${itemIndex}-${item.id || itemIndex}`}>
                       {renderClassItem({ item })}
                     </React.Fragment>
                   ))
-                ))}
+                )}
               </View>
             </View>
           ) : (

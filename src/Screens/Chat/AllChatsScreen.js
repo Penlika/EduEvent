@@ -102,7 +102,7 @@ const AllChatsScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#1C1C1E" />
         </TouchableOpacity>
-        <Text style={styles.title}>Indox</Text>
+        <Text style={styles.title}>Inbox</Text>
         <TouchableOpacity onPress={() => {}}>
           <Icon name="search" size={22} color="#1C1C1E" />
         </TouchableOpacity>

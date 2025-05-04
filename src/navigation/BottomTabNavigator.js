@@ -8,8 +8,6 @@ import ProfileScreen from '../Screens/Profile/ProfileScreen';
 import SettingScreen from '../Screens/Profile/SettingScreen';
 import Icon from 'react-native-vector-icons/Feather';
 import { StyleSheet } from 'react-native';
-import InboxScreen from '../Screens/Home/InboxScreen';
-import Schedule from '../Screens/Schedules/Schedule';
 import AllChatsScreen from '../Screens/Chat/AllChatsScreen';
 import WeekSchedule from '../Screens/Profile/ScheduleScreen';
 

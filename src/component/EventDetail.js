@@ -12,13 +12,16 @@ import {
   Platform,
   PermissionsAndroid,
   Linking,
+  ToastAndroid,
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import YoutubePlayer from 'react-native-youtube-iframe';
+import { WebView } from 'react-native-webview';
 import moment from 'moment';
 import {useTheme} from './ThemeContext';
+import CommentAndRating from '../component/CommentAndRating';
 import axios from 'axios';
 import {
   Camera,
@@ -55,7 +58,10 @@ const EventDetail = ({route, navigation}) => {
   const [translationCache, setTranslationCache] = useState({});
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
+  const [eventComments, setEventComments] = useState([]);
+  const [showComments, setShowComments] = useState(false);
+  const [isEventCompleted, setIsEventCompleted] = useState(false);
+  const [quantity, setQuantity] = useState(0);
   // Camera setup
   const cameraRef = useRef(null);
   const device = useCameraDevice('back');
@@ -131,6 +137,53 @@ const EventDetail = ({route, navigation}) => {
     return () => unsubscribe();
   }, [userId, currentLang]);
 
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!eventId) return;
+      
+      try {
+        const commentsSnapshot = await firestore()
+          .collection('event')
+          .doc(eventId)
+          .collection('CommentsAndRatings')
+          .orderBy('timestamp', 'desc')
+          .get();
+        
+        const commentsData = commentsSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          commentId: doc.id
+        }));
+        
+        // Sort comments to show current user's comment first
+        const sortedComments = commentsData.sort((a, b) => {
+          const currentUserId = auth().currentUser?.uid;
+          if (a.userId === currentUserId) return -1;
+          if (b.userId === currentUserId) return 1;
+          return 0;
+        });
+        
+        setEventComments(sortedComments);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+    };
+    
+    fetchComments();
+  }, [eventId]);
+
+  const handleUserCommentDeleted = async () => {
+    // Refresh the event data to update the ratings
+    try {
+      const docRef = firestore().collection('event').doc(eventId);
+      const docSnap = await docRef.get();
+      
+      if (docSnap.exists) {
+        setEventData(docSnap.data());
+      }
+    } catch (error) {
+      console.error('Error refreshing event data:', error);
+    }
+  };
   // Fetch user's language preference from Firestore
   const fetchUserLanguage = async () => {
     if (!userId) return;
@@ -218,20 +271,20 @@ const EventDetail = ({route, navigation}) => {
     return translations[key] || originalContent[key] || key;
   };
 
-  // Helper function to determine time slot and periods
-  const getTimeSlotDetails = eventTime => {
+  // First add this helper function to determine time slot and periods
+  const getTimeSlotDetails = (eventTime) => {
     const hours = eventTime.getHours();
     if (hours < 12) {
       return {
         timeSlot: 'morning',
         startPeriod: 1,
-        endPeriod: 5,
+        endPeriod: 5
       };
     } else {
       return {
-        timeSlot: 'afternoon',
+        timeSlot: 'afternoon', 
         startPeriod: 6,
-        endPeriod: 10,
+        endPeriod: 10
       };
     }
   };
@@ -241,20 +294,22 @@ const EventDetail = ({route, navigation}) => {
     const fetchEventData = async () => {
       try {
         if (!eventId) {
-          console.warn('eventId bị null hoặc undefined');
+          console.warn('eventId is null or undefined');
           return;
         }
 
         const docRef = firestore().collection('event').doc(eventId);
-        const docSnap = await docRef.get();
+        const unsubscribe = docRef.onSnapshot((docSnap) => {
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            setEventData(data);
+            setQuantity(data.quantity || 0);
+          }
+        });
 
-        if (docSnap.exists) {
-          setEventData(docSnap.data());
-        } else {
-          console.warn('Không tìm thấy sự kiện với eventId:', eventId);
-        }
+        return () => unsubscribe();
       } catch (error) {
-        console.error('Lỗi lấy dữ liệu sự kiện: ', error);
+        console.error('Error fetching event data: ', error);
       } finally {
         setLoading(false);
       }
@@ -266,26 +321,32 @@ const EventDetail = ({route, navigation}) => {
   // Check registration status
   useEffect(() => {
     const checkRegistration = async () => {
-      if (userId && eventId) {
-        try {
-          const registrationDoc = await firestore()
-            .collection('USER')
-            .doc(userId)
-            .collection('registeredEvents')
-            .doc(eventId)
-            .get();
+      if (!userId || !eventId) {
+        setIsRegistered(false);
+        return;
+      }
 
-          console.log('Registration check:', {
-            exists: registrationDoc.exists,
-            eventId: eventId,
-            userId: userId,
-          });
+      try {
+        const registrationDoc = await firestore()
+          .collection('USER')
+          .doc(userId)
+          .collection('registeredEvents')
+          .where('eventId', '==', eventId)
+          .get();
 
-          setIsRegistered(registrationDoc.exists);
-        } catch (error) {
-          console.error('Error checking registration:', error);
-          setIsRegistered(false);
-        }
+        setIsRegistered(!registrationDoc.empty);
+
+        // Debug logging
+        console.log('Registration check:', {
+          userId,
+          eventId,
+          isRegistered: !registrationDoc.empty,
+          docsFound: registrationDoc.size
+        });
+
+      } catch (error) {
+        console.error('Error checking registration:', error);
+        setIsRegistered(false);
       }
     };
 
@@ -412,14 +473,109 @@ const EventDetail = ({route, navigation}) => {
     },
   });
 
+  // Function to extract YouTube video ID
+  const VideoPlayer = ({ url }) => {
+    const videoInfo = getVideoInfo(url);
+    
+    if (!videoInfo) {
+      return <Text>Invalid video URL</Text>;
+    }
+    
+    if (videoInfo.platform === 'youtube') {
+      return (
+        <YoutubePlayer
+          height={200}
+          width={360}
+          play={false}
+          videoId={videoInfo.id}
+        />
+      );
+    } else if (videoInfo.platform === 'drive') {
+    return (
+      <WebView
+        style={{ height: 200, width: 360 }}
+        source={{ 
+          html: `
+            <html>
+              <body style="margin:0;padding:0;overflow:hidden;display:flex;justify-content:center;align-items:center;background-color:black;">
+                <iframe src="https://drive.google.com/file/d/${videoInfo.id}/preview" 
+                  width="100%" height="100%" 
+                  frameborder="0" allowfullscreen
+                  style="overflow:hidden;position:absolute;top:0;left:0;right:0;bottom:0;">
+                </iframe>
+              </body>
+            </html>
+          `
+        }}
+        originWhitelist={['*']}
+        allowsFullscreenVideo
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+      />
+    );
+    } else if (videoInfo.platform === 'facebook') {
+      return (
+        <WebView
+          style={{ height: 200, width: 360 }}
+          source={{ uri: `https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/facebook/videos/${videoInfo.id}` }}
+          allowsFullscreenVideo
+        />
+      );
+    }
+    
+    return <Text>Unsupported video platform</Text>;
+  };
+  
+  // Extract video ID and platform from URL
+  const getVideoInfo = (url) => {
+    if (!url) return null;
+  
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch) {
+      return {
+        platform: 'youtube',
+        id: youtubeMatch[1],
+      };
+    }
+  
+    // Google Drive
+    const driveRegex = /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([a-zA-Z0-9_-]+)/;
+    const driveMatch = url.match(driveRegex);
+    if (driveMatch) {
+      return {
+        platform: 'drive',
+        id: driveMatch[1],
+      };
+    }
+  
+    // Facebook
+    const facebookRegex = /facebook\.com\/.*\/videos\/(?:[a-zA-Z0-9._-]+\/)?(\d+)/;
+    const facebookMatch = url.match(facebookRegex);
+    if (facebookMatch) {
+      return {
+        platform: 'facebook',
+        id: facebookMatch[1],
+      };
+    }
+  
+    return null;
+  };
+  
+
   // Handle event registration
   const onPressRegister = async () => {
     if (!userId) {
-      Alert.alert('Lỗi', getText('loginRequired'));
+      Alert.alert('Error', 'Please login to register for events');
       return;
     }
 
     try {
+      // Clear any previous registration check
+      setIsRegistered(false);
+      
+      // Check if already registered
       const registrationDoc = await firestore()
         .collection('USER')
         .doc(userId)
@@ -427,30 +583,32 @@ const EventDetail = ({route, navigation}) => {
         .doc(eventId)
         .get();
 
-      if (registrationDoc.exists) {
-        Alert.alert('Lỗi', getText('alreadyRegistered'));
+      if (!registrationDoc.exists) {
+        Alert.alert('Error', 'You have already registered for this event');
         setIsRegistered(true);
         return;
       }
 
       const eventTime = eventData.time.toDate();
-      const {startPeriod, endPeriod} = getTimeSlotDetails(eventTime);
+      const { startPeriod, endPeriod } = getTimeSlotDetails(eventTime);
 
+      // Create the schedule entry
       const scheduleEntry = {
         ten_mon: eventData.title,
-        loai: eventData.category,
+        ma_nhom: eventData.category,
         thoi_gian: eventData.time,
         ten_giang_vien: eventData.organizer?.name || 'N/A',
-        dia_diem: eventData.location || 'N/A',
+        dia_diem: eventData.host || 'N/A',
         tiet_bat_dau: startPeriod,
         so_tiet: endPeriod - startPeriod + 1,
-        thu_kieu_so: eventTime.getDay() + 1,
+        thu_kieu_so: eventTime.getDay() + 1, // Convert JS day (0-6) to schedule day (1-7)
         ngay_hoc: eventData.time,
-        ma_nhom: 'EVENT',
-        type: 'event',
       };
 
+      // Batch write to both collections
       const batch = firestore().batch();
+
+      // Add to registeredEvents
       const registeredEventRef = firestore()
         .collection('USER')
         .doc(userId)
@@ -458,7 +616,7 @@ const EventDetail = ({route, navigation}) => {
         .doc(eventId);
 
       batch.set(registeredEventRef, {
-        eventId,
+        eventId: eventId,
         title: eventData.title || '',
         location: eventData.location || '',
         time: eventData.time || '',
@@ -466,9 +624,10 @@ const EventDetail = ({route, navigation}) => {
         registeredAt: firestore.Timestamp.now(),
         completed: false,
         image: eventData.image || '',
-        organizerId: eventData.organizerId || '',
+        organizerId: eventData.organizerId || ''
       });
 
+      // Add to schedule
       const scheduleRef = firestore()
         .collection('USER')
         .doc(userId)
@@ -476,11 +635,14 @@ const EventDetail = ({route, navigation}) => {
         .doc(eventId);
 
       batch.set(scheduleRef, scheduleEntry);
+
+      // Commit the batch
       await batch.commit();
 
       setIsRegistered(true);
-      Alert.alert('Thành công', getText('registrationSuccess'));
+      Alert.alert('Success', 'Successfully registered for the event');
 
+      // Add notification
       await firestore()
         .collection('USER')
         .doc(userId)
@@ -496,9 +658,61 @@ const EventDetail = ({route, navigation}) => {
       navigation.navigate('EventScreen');
     } catch (error) {
       console.error('Registration error:', error);
-      Alert.alert('Lỗi', getText('registrationFailed'));
+      Alert.alert('Error', 'Failed to register for the event');
       setIsRegistered(false);
     }
+  };
+
+  // Add the unregister function
+  const handleUnregister = async () => {
+    Alert.alert(
+      'Unregister',
+      'Are you sure you want to unregister from this event?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Unregister',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const eventRef = firestore().collection('event').doc(eventId);
+              
+              await firestore().runTransaction(async (transaction) => {
+                const eventDoc = await transaction.get(eventRef);
+                if (!eventDoc.exists) {
+                  throw 'Event does not exist!';
+                }
+
+                const currentQuantity = eventDoc.data().quantity || 0;
+                const newQuantity = Math.max(0, currentQuantity - 1);
+
+                transaction.update(eventRef, {
+                  quantity: newQuantity
+                });
+
+                // Remove from user's registered events
+                const userEventRef = firestore()
+                  .collection('USER')
+                  .doc(userId)
+                  .collection('registeredEvents')
+                  .doc(eventId);
+
+                transaction.delete(userEventRef);
+              });
+
+              setIsRegistered(false);
+              ToastAndroid.show('Successfully unregistered!', ToastAndroid.SHORT);
+            } catch (error) {
+              console.error('Unregister error:', error);
+              Alert.alert('Error', error.toString());
+            }
+          },
+        },
+      ],
+    );
   };
 
   // Handle back navigation
@@ -644,12 +858,77 @@ const EventDetail = ({route, navigation}) => {
       padding: 16,
       alignSelf: 'flex-start',
     },
+    circleBtn: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+    },
+    
+    buttonIcon: {
+      width: 40,
+      height: 40,
+      backgroundColor: 'white',
+      borderRadius: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      shadowOffset: {width: 0, height: 2},
+    },
   });
 
   // Handle QR scanning
   const handleQRScan = () => {
     setIsScanning(true);
   };
+
+  // Check if user can view comments
+  useEffect(() => {
+    const checkEventCompletionStatus = async () => {
+      if (!userId || !eventId) return;
+      
+      try {
+        const eventDoc = await firestore()
+          .collection('USER')
+          .doc(userId)
+          .collection('registeredEvents')
+          .doc(eventId)
+          .get();
+        
+        setShowComments(eventDoc.exists && eventDoc.data()?.completed === true);
+      } catch (error) {
+        console.error('Error checking event completion:', error);
+        setShowComments(false);
+      }
+    };
+
+    checkEventCompletionStatus();
+  }, [userId, eventId]);
+
+  // Check event completion status
+  useEffect(() => {
+    const checkEventCompletion = async () => {
+      if (!userId || !eventId) return;
+
+      try {
+        const eventDoc = await firestore()
+          .collection('USER')
+          .doc(userId)
+          .collection('registeredEvents')
+          .doc(eventId)
+          .get();
+
+        setIsEventCompleted(eventDoc.exists && eventDoc.data()?.completed === true);
+      } catch (error) {
+        console.error('Error checking event completion:', error);
+      }
+    };
+
+    checkEventCompletion();
+  }, [userId, eventId]);
 
   if (isTranslating) {
     return (
@@ -735,13 +1014,20 @@ const EventDetail = ({route, navigation}) => {
           </Text>
           {/* Rating */}
           <View style={styles.ratingWrapper}>
+            <Text
+              style={{
+                ...styles.ratingText,
+                color: isDark ? '#FFFFFF' : '#333',
+              }}>
+                ({eventData.ratings_count ? eventData.ratings_count : 'N/A'})
+            </Text>
             <Icon name="star" size={16} color="#f2c94c" />
             <Text
               style={{
                 ...styles.ratingText,
                 color: isDark ? '#FFFFFF' : '#333',
               }}>
-              {eventData.rating ? eventData.rating.toFixed(1) : 'N/A'}
+              {eventData.average_rating ? eventData.average_rating.toFixed(1) : 'N/A'}
             </Text>
           </View>
 
@@ -757,7 +1043,7 @@ const EventDetail = ({route, navigation}) => {
               color={isDark ? '#CCCCCC' : '#333'}
             />
             <Text style={dynamicStyles.infoText}>
-              {eventData.location || 'Khu vực chưa được thêm'}
+              {eventData.host || 'Khu vực chưa được thêm'}
             </Text>
             <Text style={dynamicStyles.separator}>|</Text>
             <Icon
@@ -777,11 +1063,10 @@ const EventDetail = ({route, navigation}) => {
 
           {/* Quantity */}
           <Text
-            style={{...styles.quantity, color: isDark ? '#64B5F6' : '#1E88E5'}}>
-            {eventData.quantity
-              ? `${eventData.quantity}/${eventData.quantitymax}`
-              : '0/500'}
+            style={{ ...styles.quantity, color: isDark ? '#64B5F6' : '#1E88E5' }}>
+            {(eventData.quantity ?? 0)}/{eventData.quantitymax}
           </Text>
+
 
           {/* Tabs: About / Trailer */}
           <View style={styles.tabWrapper}>
@@ -812,13 +1097,8 @@ const EventDetail = ({route, navigation}) => {
             </Text>
           ) : (
             <View style={dynamicStyles.trailerWrapper}>
-              {eventData.trailerId ? (
-                <YoutubePlayer
-                  height={200}
-                  width={360}
-                  play={false}
-                  videoId={eventData.trailerId}
-                />
+              {eventData.videoUrl ? (
+                <VideoPlayer url={eventData.videoUrl} />
               ) : (
                 <Text style={dynamicStyles.noTrailerText}>
                   {getText('noTrailer')}
@@ -873,19 +1153,18 @@ const EventDetail = ({route, navigation}) => {
           </View>
         ))}
 
-        {/* Reviews */}
-        <View style={styles.reviewHeader}>
-          <Text style={dynamicStyles.sectionTitle}>{getText('reviews')}</Text>
-          <TouchableOpacity>
-            <Text
-              style={{
-                ...styles.seeAllText,
-                color: isDark ? '#64B5F6' : '#1E88E5',
-              }}>
-              {getText('seeAll')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Comments section */}
+        {showComments && (
+          <CommentAndRating
+            id={eventId}
+            targetCollection="event"
+            comments={eventComments}
+            setComments={setEventComments}
+            onUserCommentDeleted={handleUserCommentDeleted}
+            isDarkMode={isDark}
+            requirePurchase={true}
+          />
+        )}
         {eventData.reviews?.map((review, index) => (
           <View style={dynamicStyles.reviewItem} key={index}>
             <View style={styles.reviewAvatarWrapper}>
@@ -931,23 +1210,15 @@ const EventDetail = ({route, navigation}) => {
         ))}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[
-          styles.registerBtn,
-          isRegistered && {backgroundColor: '#28a745'},
-        ]}
-        onPress={() => {
-          if (isRegistered) {
-            handleQRScan();
-          } else {
-            onPressRegister();
-          }
-        }}>
-        <Text style={styles.registerBtnText}>
-          {isRegistered ? 'Scan QR Code' : getText('register')}
-        </Text>
-        <View
-          style={{
+      {/* Bottom buttons */}
+      {isRegistered && !isEventCompleted ? (
+      <View style={{ flexDirection: 'row', position: 'absolute', bottom: '4%', right: '10%', left: '10%' }}>
+        <TouchableOpacity
+          style={[styles.registerBtn, { backgroundColor: '#28a745' }]}
+          onPress={handleQRScan}
+        >
+          <Text style={styles.registerBtnText}>Scan QR Code</Text>
+          <View style={{
             width: 40,
             height: 40,
             backgroundColor: 'white',
@@ -959,13 +1230,46 @@ const EventDetail = ({route, navigation}) => {
             shadowRadius: 5,
             shadowOffset: {width: 0, height: 2},
           }}>
-          <Icon
-            name={isRegistered ? 'qrcode-scan' : 'arrow-right'}
-            size={30}
-            color={isRegistered ? '#28a745' : '#007AFF'}
-          />
-        </View>
-      </TouchableOpacity>
+            <Icon
+              name="qrcode-scan"
+              size={30}
+              color="#28a745"
+            />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.circleBtn, { marginLeft: 285 }]}
+          onPress={handleUnregister}
+        >
+        <Icon name="close-circle" size={70} color="#dc3545" />
+        </TouchableOpacity>
+      </View>
+      ) : !isRegistered && (
+        <TouchableOpacity
+          style={styles.registerBtn}
+          onPress={onPressRegister}
+        >
+          <Text style={styles.registerBtnText}>{getText('register')}</Text>
+          <View style={{
+            width: 40,
+            height: 40,
+            backgroundColor: 'white',
+            borderRadius: 30,
+            justifyContent: 'center',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOpacity: 0.3,
+            shadowRadius: 5,
+            shadowOffset: {width: 0, height: 2},
+          }}>
+            <Icon
+              name="arrow-right"
+              size={30}
+              color="#007AFF"
+            />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -1072,8 +1376,8 @@ const styles = StyleSheet.create({
   registerBtn: {
     position: 'absolute',
     bottom: '4%',
-    right: '10%',
-    left: '10%',
+    right: '20%',
+    left: '20%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
