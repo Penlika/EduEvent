@@ -415,8 +415,13 @@ const EventDetail = ({route, navigation}) => {
 
             Geolocation.getCurrentPosition(
               position => {
-                const { latitude, longitude } = position.coords;
-                const distance = calculateDistance(latitude, longitude, lat2, lon2);
+                const {latitude, longitude} = position.coords;
+                const distance = calculateDistance(
+                  latitude,
+                  longitude,
+                  lat2,
+                  lon2,
+                );
 
                 if (distance <= 50) {
                   const eventRef = firestore()
@@ -426,45 +431,58 @@ const EventDetail = ({route, navigation}) => {
                     .doc(eventId);
 
                   eventRef
-                    .update({ completed: true })
+                    .update({completed: true})
                     .then(() => {
-                      Alert.alert('Thành Công', getText('success'), [
-                        { text: 'OK', onPress: () => setIsScanning(false) },
-                      ]);
+                      firestore()
+                        .collection('USER')
+                        .doc(userId)
+                        .collection('notifications')
+                        .add({
+                          title: 'Sự kiện đã hoàn thành',
+                          body: `Bạn đã hoàn thành sự kiện "${eventData.title}".`,
+                          type: 'event_completed',
+                          isRead: false,
+                          timestamp: firestore.FieldValue.serverTimestamp(),
+                        })
+                        .then(() => {
+                          Alert.alert('Thành Công', getText('success'), [
+                            {text: 'OK', onPress: () => setIsScanning(false)},
+                          ]);
+                        });
                     })
                     .catch(() => {
                       Alert.alert('Lỗi', getText('updateError'), [
-                        { text: 'OK', onPress: () => setIsProcessing(false) },
+                        {text: 'OK', onPress: () => setIsProcessing(false)},
                       ]);
                     });
                 } else {
                   Alert.alert('Lỗi', getText('outOfRange'), [
-                    { text: 'OK', onPress: () => setIsProcessing(false) },
+                    {text: 'OK', onPress: () => setIsProcessing(false)},
                   ]);
                 }
               },
               error => {
                 console.error('Lỗi lấy vị trí:', error);
                 Alert.alert('Lỗi', getText('locationError'), [
-                  { text: 'OK', onPress: () => setIsProcessing(false) },
-                  { text: 'Mở Cài Đặt', onPress: () => Linking.openSettings() },
+                  {text: 'OK', onPress: () => setIsProcessing(false)},
+                  {text: 'Mở Cài Đặt', onPress: () => Linking.openSettings()},
                 ]);
               },
-              { timeout: 10000, maximumAge: 10000 },
+              {timeout: 10000, maximumAge: 10000},
             );
           } else if (!eventId) {
             Alert.alert('Lỗi', getText('noEventId'), [
-              { text: 'OK', onPress: () => setIsProcessing(false) },
+              {text: 'OK', onPress: () => setIsProcessing(false)},
             ]);
           } else {
             Alert.alert('Lỗi', getText('qrMismatch'), [
-              { text: 'OK', onPress: () => setIsProcessing(false) },
+              {text: 'OK', onPress: () => setIsProcessing(false)},
             ]);
           }
         } catch (error) {
           console.error('Lỗi xử lý mã QR:', error);
           Alert.alert('Lỗi', getText('qrError'), [
-            { text: 'OK', onPress: () => setIsProcessing(false) },
+            {text: 'OK', onPress: () => setIsProcessing(false)},
           ]);
         } finally {
           setTimeout(() => setIsProcessing(false), 1000);
