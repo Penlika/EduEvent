@@ -583,49 +583,63 @@ const EventDetail = ({route, navigation}) => {
   
 
   // Handle event registration
-  const onPressRegister = async () => {
-    if (!userId) {
-      Alert.alert('Error', 'Please login to register for events');
+// Handle event registration
+const onPressRegister = async () => {
+  if (!userId) {
+    Alert.alert('Error', getText('loginRequired'));
+    return;
+  }
+
+  try {
+    // Check if already registered
+    const registrationDoc = await firestore()
+      .collection('USER')
+      .doc(userId)
+      .collection('registeredEvents')
+      .where('eventId', '==', eventId)
+      .get();
+
+    if (!registrationDoc.empty) {
+      Alert.alert('Error', getText('alreadyRegistered'));
+      setIsRegistered(true);
       return;
     }
 
-    try {
-      // Clear any previous registration check
-      setIsRegistered(false);
+    const eventTime = eventData.time.toDate();
+    const { startPeriod, endPeriod } = getTimeSlotDetails(eventTime);
+
+    // Create the schedule entry
+    const scheduleEntry = {
+      ten_mon: eventData.title,
+      ma_nhom: eventData.category,
+      thoi_gian: eventData.time,
+      ten_giang_vien: eventData.organizer?.name || 'N/A',
+      dia_diem: eventData.host || 'N/A',
+      tiet_bat_dau: startPeriod,
+      so_tiet: endPeriod - startPeriod + 1,
+      thu_kieu_so: eventTime.getDay() + 1, // Convert JS day (0-6) to schedule day (1-7)
+      ngay_hoc: eventData.time,
+    };
+
+    // Use transaction to ensure atomicity and data integrity
+    await firestore().runTransaction(async (transaction) => {
+      // Get the current event document
+      const eventRef = firestore().collection('event').doc(eventId);
+      const eventDoc = await transaction.get(eventRef);
       
-      // Check if already registered
-      const registrationDoc = await firestore()
-        .collection('USER')
-        .doc(userId)
-        .collection('registeredEvents')
-        .doc(eventId)
-        .get();
-
-      if (!registrationDoc.exists) {
-        Alert.alert('Error', 'You have already registered for this event');
-        setIsRegistered(true);
-        return;
+      if (!eventDoc.exists) {
+        throw new Error('Event does not exist!');
       }
-
-      const eventTime = eventData.time.toDate();
-      const { startPeriod, endPeriod } = getTimeSlotDetails(eventTime);
-
-      // Create the schedule entry
-      const scheduleEntry = {
-        ten_mon: eventData.title,
-        ma_nhom: eventData.category,
-        thoi_gian: eventData.time,
-        ten_giang_vien: eventData.organizer?.name || 'N/A',
-        dia_diem: eventData.host || 'N/A',
-        tiet_bat_dau: startPeriod,
-        so_tiet: endPeriod - startPeriod + 1,
-        thu_kieu_so: eventTime.getDay() + 1, // Convert JS day (0-6) to schedule day (1-7)
-        ngay_hoc: eventData.time,
-      };
-
-      // Batch write to both collections
-      const batch = firestore().batch();
-
+      
+      // Calculate the new quantity (current + 1)
+      const currentQuantity = eventDoc.data().quantity || 0;
+      const newQuantity = currentQuantity + 1;
+      
+      // Update the quantity in the event document
+      transaction.update(eventRef, {
+        quantity: newQuantity
+      });
+      
       // Add to registeredEvents
       const registeredEventRef = firestore()
         .collection('USER')
@@ -633,7 +647,7 @@ const EventDetail = ({route, navigation}) => {
         .collection('registeredEvents')
         .doc(eventId);
 
-      batch.set(registeredEventRef, {
+      transaction.set(registeredEventRef, {
         eventId: eventId,
         title: eventData.title || '',
         location: eventData.location || '',
@@ -652,86 +666,111 @@ const EventDetail = ({route, navigation}) => {
         .collection('schedule')
         .doc(eventId);
 
-      batch.set(scheduleRef, scheduleEntry);
+      transaction.set(scheduleRef, scheduleEntry);
+    });
 
-      // Commit the batch
-      await batch.commit();
+    setIsRegistered(true);
+    setQuantity(quantity + 1); // Update local state to reflect new quantity
+    Alert.alert('Success', getText('registrationSuccess'));
 
-      setIsRegistered(true);
-      Alert.alert('Success', 'Successfully registered for the event');
+    // Add notification
+    await firestore()
+      .collection('USER')
+      .doc(userId)
+      .collection('notifications')
+      .add({
+        title: 'Đăng ký sự kiện thành công',
+        body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
+        type: 'event_joined',
+        isRead: false,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
 
-      // Add notification
-      await firestore()
-        .collection('USER')
-        .doc(userId)
-        .collection('notifications')
-        .add({
-          title: 'Đăng ký sự kiện thành công',
-          body: `Bạn đã đăng ký tham gia sự kiện "${eventData.title}".`,
-          type: 'event_joined',
-          isRead: false,
-          timestamp: firestore.FieldValue.serverTimestamp(),
-        });
-
-      navigation.navigate('EventScreen');
-    } catch (error) {
-      console.error('Registration error:', error);
-      Alert.alert('Error', 'Failed to register for the event');
-      setIsRegistered(false);
-    }
-  };
+    navigation.navigate('EventScreen');
+  } catch (error) {
+    console.error('Registration error:', error);
+    Alert.alert('Error', getText('registrationFailed'));
+    setIsRegistered(false);
+  }
+};
 
   // Add the unregister function
-  const handleUnregister = async () => {
-    Alert.alert(
-      'Unregister',
-      'Are you sure you want to unregister from this event?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Unregister',
-          style: 'destructive',
-          onPress: async () => {
-            try {
+// Add the unregister function
+const handleUnregister = async () => {
+  Alert.alert(
+    'Unregister',
+    'Are you sure you want to unregister from this event?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Unregister',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await firestore().runTransaction(async (transaction) => {
+              // Get references to all documents we need to update/delete
               const eventRef = firestore().collection('event').doc(eventId);
+              const userEventRef = firestore()
+                .collection('USER')
+                .doc(userId)
+                .collection('registeredEvents')
+                .doc(eventId);
+              const scheduleRef = firestore()
+                .collection('USER')
+                .doc(userId)
+                .collection('schedule')
+                .doc(eventId);
               
-              await firestore().runTransaction(async (transaction) => {
-                const eventDoc = await transaction.get(eventRef);
-                if (!eventDoc.exists) {
-                  throw 'Event does not exist!';
-                }
+              // Verify the event exists
+              const eventDoc = await transaction.get(eventRef);
+              if (!eventDoc.exists) {
+                throw new Error('Event does not exist!');
+              }
 
-                const currentQuantity = eventDoc.data().quantity || 0;
-                const newQuantity = Math.max(0, currentQuantity - 1);
-
-                transaction.update(eventRef, {
-                  quantity: newQuantity
-                });
-
-                // Remove from user's registered events
-                const userEventRef = firestore()
-                  .collection('USER')
-                  .doc(userId)
-                  .collection('registeredEvents')
-                  .doc(eventId);
-
-                transaction.delete(userEventRef);
+              // Decrease the quantity field in the event document
+              const currentQuantity = eventDoc.data().quantity || 0;
+              // Ensure quantity doesn't go below 0
+              const newQuantity = Math.max(0, currentQuantity - 1);
+              transaction.update(eventRef, {
+                quantity: newQuantity
               });
 
-              setIsRegistered(false);
-              ToastAndroid.show('Successfully unregistered!', ToastAndroid.SHORT);
-            } catch (error) {
-              console.error('Unregister error:', error);
-              Alert.alert('Error', error.toString());
-            }
-          },
+              // Delete from user's registered events
+              transaction.delete(userEventRef);
+              
+              // Delete from user's schedule
+              transaction.delete(scheduleRef);
+            });
+
+            setIsRegistered(false);
+            setQuantity(Math.max(0, quantity - 1)); // Update local state
+            ToastAndroid.show('Successfully unregistered!', ToastAndroid.SHORT);
+            
+            // Add notification about unregistration
+            await firestore()
+              .collection('USER')
+              .doc(userId)
+              .collection('notifications')
+              .add({
+                title: 'Hủy đăng ký sự kiện',
+                body: `Bạn đã hủy đăng ký tham gia sự kiện "${eventData.title}".`,
+                type: 'event_unregistered',
+                isRead: false,
+                timestamp: firestore.FieldValue.serverTimestamp(),
+              });
+            
+          } catch (error) {
+            console.error('Unregister error:', error);
+            Alert.alert('Error', error.toString());
+          }
         },
-      ],
-    );
-  };
+      },
+    ],
+  );
+};
 
   // Handle back navigation
   const handleBack = () => {
@@ -1005,24 +1044,11 @@ const EventDetail = ({route, navigation}) => {
   return (
     <View style={dynamicStyles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        {eventData.image ? (
-          <ImageBackground
-            source={{uri: eventData.image}}
-            style={{...styles.headerImg, marginTop: 30}}
-            resizeMode="cover">
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Icon name="arrow-left" size={24} color="#fff" />
-            </TouchableOpacity>
-          </ImageBackground>
-        ) : (
-          <View style={[styles.headerImg, {backgroundColor: 'black'}]}>
-            <TouchableOpacity
-              onPress={handleBack}
-              style={{...styles.backBtn, marginTop: 30}}>
-              <Icon name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
+      <ImageCarousel 
+        images={eventData?.images || []} 
+        onBack={handleBack}
+        style={styles.headerImg}
+      />
 
         {/* Card info chung */}
         <View style={dynamicStyles.eventCard}>
@@ -1296,14 +1322,15 @@ const EventDetail = ({route, navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   contentContainer: {
     paddingBottom: 80,
   },
   headerImg: {
     width: '100%',
-    height: 300,
-    overflow: 'hidden',
+    height: 250,
+    marginTop: 30,
   },
   backBtn: {
     backgroundColor: 'rgba(0,0,0,0.4)',
